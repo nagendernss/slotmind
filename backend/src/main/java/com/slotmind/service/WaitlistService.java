@@ -95,6 +95,8 @@ public class WaitlistService {
         Slot slot = slots.findDetailed(e.getOfferedSlot().getId()).orElseThrow();
         if (slot.getStatus() != SlotStatus.OPEN || !slot.getProvider().isOnline())
             throw new SlotUnavailableException("Slot " + slot.getId() + " is no longer free");
+        if (!slot.getStartTime().isAfter(LocalDateTime.now()))
+            throw new SlotUnavailableException("Slot " + slot.getId() + " has already started — the offer expired");
         slot.book();
         Appointment a = new Appointment(IdGen.next("APT", 100), e.getPatientName(), e.getContact(), e.getType(),
                 slot.getProvider(), slot, AppointmentStatus.CONFIRMED);
