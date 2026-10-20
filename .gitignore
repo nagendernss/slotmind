@@ -21,3 +21,6 @@ Thumbs.db
 
 # hackathon brief (organiser material)
 slotmind-brief*.html
+
+# local agent worktrees
+.claude/
