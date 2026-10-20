@@ -57,16 +57,26 @@ public class RescheduleOrchestrator {
         if (appt.getStatus() == AppointmentStatus.COMPLETED)
             throw new IllegalStateTransitionException("Appointment " + appointmentId + " is COMPLETED, cannot be rescheduled");
         TriggerReason trigger = TriggerReason.INITIAL;
-        if (appt.getStatus() == AppointmentStatus.RESCHEDULE_PENDING) {
+        boolean another = appt.getStatus() == AppointmentStatus.RESCHEDULE_PENDING;
+        if (another) {
             trigger = suggestions.findDetailedByAppointmentId(appointmentId).stream()
                     .findFirst().map(RescheduleSuggestion::getTriggerReason).orElse(TriggerReason.INITIAL);
         }
         activity.log(ActivityKind.INFO, "POST /appointments/" + appointmentId + "/suggest → new time requested by " + actor
                 + " for " + appt.getPatientName() + (trigger == TriggerReason.INITIAL ? "" : " (still " + label(trigger) + ")"));
-        return create(appt, trigger, strategyOverride);
+        // "Suggest another" must not repeat a time already offered to this patient; if every legal slot has been
+        // offered, fall back to excluding only the ones the patient explicitly rejected.
+        Set<String> exclude = new HashSet<>(another
+                ? suggestions.findPreviouslySuggestedSlotIds(appointmentId)
+                : suggestions.findRejectedSlotIds(appointmentId));
+        return create(appt, trigger, strategyOverride, exclude);
     }
 
     private SuggestionView create(Appointment appt, TriggerReason trigger, String strategyOverride) {
+        return create(appt, trigger, strategyOverride, new HashSet<>(suggestions.findRejectedSlotIds(appt.getId())));
+    }
+
+    private SuggestionView create(Appointment appt, TriggerReason trigger, String strategyOverride, Set<String> exclude) {
         appt.markReschedulePending();
 
         // Supersede older pending suggestions first and flush, so the unique pendingKey never collides.
@@ -74,8 +84,11 @@ public class RescheduleOrchestrator {
         pending.forEach(RescheduleSuggestion::supersede);
         suggestions.saveAllAndFlush(pending);
 
-        Set<String> exclude = new HashSet<>(suggestions.findRejectedSlotIds(appt.getId()));
         EngineResult r = engine.recommend(appt, trigger, exclude, strategyOverride);
+        Set<String> rejectedOnly = new HashSet<>(suggestions.findRejectedSlotIds(appt.getId()));
+        if (r.slot() == null && !rejectedOnly.containsAll(exclude)) {
+            r = engine.recommend(appt, trigger, rejectedOnly, strategyOverride); // all alternatives offered: cycle back
+        }
 
         RescheduleSuggestion s = new RescheduleSuggestion(appt, r.slot(), r.alternateProviderId(), r.confidence(),
                 r.reasoning(), trigger, r.strategy(), r.fallbackUsed(), r.crossClinic());

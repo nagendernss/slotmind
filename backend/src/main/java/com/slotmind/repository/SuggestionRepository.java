@@ -39,4 +39,9 @@ public interface SuggestionRepository extends JpaRepository<RescheduleSuggestion
     @Query("select g.recommendedSlot.id from RescheduleSuggestion g where g.appointment.id = :appointmentId "
             + "and g.status = com.slotmind.domain.SuggestionStatus.REJECTED and g.recommendedSlot is not null")
     List<String> findRejectedSlotIds(@Param("appointmentId") String appointmentId);
+
+    /** Every slot already offered to this appointment (pending, superseded or rejected) — used by "suggest another". */
+    @Query("select g.recommendedSlot.id from RescheduleSuggestion g where g.appointment.id = :appointmentId "
+            + "and g.status <> com.slotmind.domain.SuggestionStatus.ACCEPTED and g.recommendedSlot is not null")
+    List<String> findPreviouslySuggestedSlotIds(@Param("appointmentId") String appointmentId);
 }
