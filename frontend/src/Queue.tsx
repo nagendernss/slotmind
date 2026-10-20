@@ -33,7 +33,7 @@ export function QueueView({ ctx }: { ctx: Ctx }) {
     return list.map((appt) => {
       const sug = latest[appt.id];
       const stream = streams[appt.id];
-      const trigger = (stream ? 'INITIAL' : sug?.triggerReason) ?? 'INITIAL';
+      const trigger = stream?.suggestion?.triggerReason ?? sug?.triggerReason ?? 'INITIAL';
       return { appt, sug, stream, trigger: trigger as TriggerReason };
     }).sort((x, y) =>
       (RANK[x.appt.type] ?? 9) - (RANK[y.appt.type] ?? 9)

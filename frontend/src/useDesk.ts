@@ -25,9 +25,18 @@ export function useDesk() {
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const inflight = useRef<Promise<void> | null>(null);
+  const seq = useRef(0);
 
-  const refresh = useCallback(async () => {
-    if (inflight.current) return inflight.current;
+  // Polls may share an in-flight request; after a mutation (fresh=true) we must wait for it and fetch again,
+  // otherwise the UI shows data read before the change. Responses older than the newest applied one are dropped.
+  const refresh = useCallback(async (fresh = true): Promise<void> => {
+    const pending = inflight.current;
+    if (pending) {
+      if (!fresh) return pending;
+      await pending.catch(() => undefined);
+      if (inflight.current !== null && inflight.current !== pending) return refresh(true);
+    }
+    const mine = ++seq.current;
     const p = (async () => {
       try {
         const [suggestions, appointments, providers, schedule, activity, waitlist, notifications, strategy] = await Promise.all([
@@ -40,6 +49,7 @@ export function useDesk() {
           api.notifications(),
           api.getStrategy(),
         ]);
+        if (mine !== seq.current) return;
         setData({
           suggestions: suggestions ?? [],
           appointments: appointments ?? [],
@@ -64,7 +74,7 @@ export function useDesk() {
 
   useEffect(() => {
     refresh();
-    const id = window.setInterval(refresh, POLL_MS);
+    const id = window.setInterval(() => { refresh(false); }, POLL_MS);
     const tick = window.setInterval(() => setNow(Date.now()), 1000);
     return () => { window.clearInterval(id); window.clearInterval(tick); };
   }, [refresh]);

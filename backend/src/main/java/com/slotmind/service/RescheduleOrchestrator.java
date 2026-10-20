@@ -46,15 +46,24 @@ public class RescheduleOrchestrator {
         return Optional.of(create(appt, trigger, null).id());
     }
 
-    /** Manual / portal request (INITIAL): always produces a fresh suggestion, superseding older pending ones. */
+    /**
+     * Manual / portal request: always produces a fresh suggestion, superseding older pending ones.
+     * A brand-new request is INITIAL; "suggest another" on an appointment already being re-scheduled keeps the
+     * original trigger, so it gets the right prompt (offline vs cancelled) and keeps its badge in the queue.
+     */
     @Transactional
     public SuggestionView requestNew(String appointmentId, String strategyOverride, String actor) {
         Appointment appt = appointments.findDetailed(appointmentId).orElseThrow(() -> new NotFoundException("Appointment", appointmentId));
         if (appt.getStatus() == AppointmentStatus.COMPLETED)
             throw new IllegalStateTransitionException("Appointment " + appointmentId + " is COMPLETED, cannot be rescheduled");
+        TriggerReason trigger = TriggerReason.INITIAL;
+        if (appt.getStatus() == AppointmentStatus.RESCHEDULE_PENDING) {
+            trigger = suggestions.findDetailedByAppointmentId(appointmentId).stream()
+                    .findFirst().map(RescheduleSuggestion::getTriggerReason).orElse(TriggerReason.INITIAL);
+        }
         activity.log(ActivityKind.INFO, "POST /appointments/" + appointmentId + "/suggest → new time requested by " + actor
-                + " for " + appt.getPatientName());
-        return create(appt, TriggerReason.INITIAL, strategyOverride);
+                + " for " + appt.getPatientName() + (trigger == TriggerReason.INITIAL ? "" : " (still " + label(trigger) + ")"));
+        return create(appt, trigger, strategyOverride);
     }
 
     private SuggestionView create(Appointment appt, TriggerReason trigger, String strategyOverride) {
