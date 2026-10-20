@@ -23,7 +23,8 @@ public class StrategyRegistry {
             beans.stream().filter(b -> b.key().equals(k)).findFirst().ifPresent(b -> strategies.put(k, b));
         }
         beans.forEach(b -> strategies.putIfAbsent(b.key(), b));
-        this.activeKey = configured == null ? "AI" : configured.trim().toUpperCase();
+        // An empty property (slotmind.scheduling.strategy=) bypasses the @Value default, so treat blank like missing.
+        this.activeKey = configured == null || configured.isBlank() ? "AI" : normalize(configured);
     }
 
     public String activeKey() { return activeKey; }

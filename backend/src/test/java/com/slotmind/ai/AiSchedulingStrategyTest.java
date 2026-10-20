@@ -1,11 +1,17 @@
 package com.slotmind.ai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.slotmind.domain.PreferredWindow;
 import com.slotmind.domain.TriggerReason;
+import com.slotmind.scheduling.SchedulingContext;
 import com.slotmind.scheduling.SlotRecommendation;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,6 +55,54 @@ class AiSchedulingStrategyTest {
     @Test
     void propagatesGatewayFailure() {
         LlmGateway fake = (s, u) -> { throw new LlmException("timeout"); };
+        assertThatThrownBy(() -> with(fake).recommend(f.ctx(TriggerReason.SLOT_CANCELLED, List.of(f.patelLater))))
+                .isInstanceOf(LlmException.class);
+    }
+
+    @Test
+    void keyIsAi() {
+        assertThat(with((s, u) -> "").key()).isEqualTo("AI");
+    }
+
+    @Test
+    void nullCandidatesReturnsEmpty() {
+        LlmGateway boom = (s, u) -> { throw new AssertionError("should not be called"); };
+        SchedulingContext c = new SchedulingContext(f.appointment, TriggerReason.INITIAL, null, List.of(), PreferredWindow.ANY,
+                Map.of(), false, AiTestFixtures.NOW);
+        assertThat(with(boom).recommend(c)).isEmpty();
+    }
+
+    @Test
+    void gatewayReceivesFactoryPrompts() {
+        AtomicReference<String> sys = new AtomicReference<>();
+        AtomicReference<String> user = new AtomicReference<>();
+        LlmGateway spy = (s, u) -> { sys.set(s); user.set(u); return "{\"slotId\":\"SLT-005\",\"confidence\":0.9,\"reasoning\":\"Fine.\"}"; };
+        var ctx = f.ctx(TriggerReason.SLOT_CANCELLED, List.of(f.patelLater, f.chenSoon));
+        with(spy).recommend(ctx);
+        assertThat(sys.get()).isEqualTo(PromptFactory.SYSTEM_PROMPT);
+        assertThat(user.get()).isEqualTo(prompts.build(ctx).user());
+    }
+
+    @Test
+    void modelAlternateIsIgnoredForSameDoctorSlot() {
+        LlmGateway fake = (s, u) -> "{\"slotId\":\"SLT-005\",\"alternateProviderId\":\"PRV-999\",\"confidence\":0.9,\"reasoning\":\"Same doctor.\"}";
+        SlotRecommendation r = with(fake).recommend(f.ctx(TriggerReason.SLOT_CANCELLED, List.of(f.patelLater))).get(0);
+        assertThat(r.alternateProviderId()).isNull();
+        assertThat(r.confidence()).isEqualTo(0.9);
+        assertThat(r.reasoning()).isEqualTo("Same doctor.");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"apt-001", "RM-001", "CLN-001", "PRV-1", "SUG-003", "WL-001"})
+    void throwsOnAnyInternalIdFamily(String id) {
+        LlmGateway fake = (s, u) -> "{\"slotId\":\"SLT-005\",\"confidence\":0.8,\"reasoning\":\"See " + id + " soon.\"}";
+        assertThatThrownBy(() -> with(fake).recommend(f.ctx(TriggerReason.SLOT_CANCELLED, List.of(f.patelLater))))
+                .isInstanceOf(LlmException.class).hasMessageContaining("internal ids");
+    }
+
+    @Test
+    void unparseableAnswerPropagatesAsLlmException() {
+        LlmGateway fake = (s, u) -> "Sorry, I can't decide.";
         assertThatThrownBy(() -> with(fake).recommend(f.ctx(TriggerReason.SLOT_CANCELLED, List.of(f.patelLater))))
                 .isInstanceOf(LlmException.class);
     }

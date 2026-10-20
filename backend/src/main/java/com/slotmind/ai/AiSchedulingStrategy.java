@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 @Component
 public class AiSchedulingStrategy implements SchedulingStrategy {
     private static final Logger log = LoggerFactory.getLogger(AiSchedulingStrategy.class);
-    private static final Pattern INTERNAL_ID = Pattern.compile("\\b(SLT|PRV|APT|RM|CLN)-\\d+", Pattern.CASE_INSENSITIVE);
+    private static final Pattern INTERNAL_ID = Pattern.compile("\\b(SLT|PRV|APT|RM|CLN|SUG|WL)-\\d+", Pattern.CASE_INSENSITIVE);
 
     private final LlmGateway gateway;
     private final PromptFactory prompts;
