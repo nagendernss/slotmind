@@ -1,0 +1,1289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SlotMind front desk</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F7F9}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+button{font-family:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:2px solid #1D4ED8;outline-offset:2px}
+.hov:hover{background:#F2F4F7 !important}
+.prim:hover:not(:disabled){filter:brightness(1.12)}
+.slotbtn:hover{filter:brightness(0.97);z-index:2}
+.sk{background:linear-gradient(90deg,#EEF0F3 25%,#F7F8FA 50%,#EEF0F3 75%);background-size:200% 100%;animation:sh 1.3s linear infinite;border-radius:6px}
+@keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+.caret{display:inline-block;width:2px;height:1.1em;background:currentColor;vertical-align:-3px;margin-left:2px;animation:bl 0.9s steps(1) infinite}
+@keyframes bl{50%{opacity:0}}
+.pulse{animation:pu 2s ease-in-out infinite}
+@keyframes pu{50%{opacity:0.35}}
+.fadein{animation:fi 0.35s ease-out}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F6F7F9; color: #101828; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.45">
+
+<!-- Header -->
+<header style="background: #FFFFFF; border-bottom: 1px solid #E3E6EB">
+  <div style="max-width: 1440px; margin: 0 auto; padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <div style="width: 32px; height: 32px; border-radius: 9px; background: {{accent}}; display: flex; align-items: center; justify-content: center">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><path d="M3 9.5h18M8 2.5v4M16 2.5v4"></path><path d="M9 15l2 2 4-4"></path></svg>
+      </div>
+      <div style="display: flex; flex-direction: column">
+        <span style="font-weight: 700; font-size: 16px; letter-spacing: -0.01em">SlotMind</span>
+        <span style="font-size: 12px; color: #475467">CareBridge · Downtown Clinic</span>
+      </div>
+    </div>
+    <div style="height: 28px; width: 1px; background: #E3E6EB"></div>
+    <div style="display: flex; align-items: center; gap: 8px; color: #344054; font-size: 13px">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+      <span>Tuesday, Oct 20 · <span class="mono">{{nowLabel}}</span></span>
+    </div>
+    <div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+      <sc-if value="{{pollOk}}" hint-placeholder-val="{{true}}">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #ECFDF3; color: #067647; font-size: 12px; font-weight: 500">
+          <span class="pulse" style="width: 8px; height: 8px; border-radius: 50%; background: #12B76A"></span>
+          <span>Live · synced {{pollAgo}}s ago</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{pollErr}}" hint-placeholder-val="{{false}}">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #FEF3F2; color: #B42318; font-size: 12px; font-weight: 500">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #F04438"></span>
+          <span>Connection lost</span>
+        </div>
+      </sc-if>
+      <div role="group" aria-label="Scheduling strategy" style="display: flex; align-items: center; gap: 8px">
+        <span style="font-size: 12px; color: #475467">Strategy</span>
+        <div style="display: flex; padding: 3px; background: #EEF0F3; border-radius: 10px; gap: 2px">
+          <button aria-pressed="{{isAI}}" onClick="{{setAI}}" style="display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; background: {{aiBg}}; color: {{aiFg}}; box-shadow: {{aiShadow}}">
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>
+            AI advisor
+          </button>
+          <button aria-pressed="{{isRule}}" onClick="{{setRule}}" style="min-height: 34px; padding: 0 12px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; background: {{ruleBg}}; color: {{ruleFg}}; box-shadow: {{ruleShadow}}">Rule-based</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <nav aria-label="Sections" style="max-width: 1440px; margin: 0 auto; padding: 0 24px; display: flex; gap: 4px; overflow-x: auto">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+      <button aria-current="{{t.current}}" onClick="{{t.go}}" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: none; background: none; border-bottom: 2px solid {{t.border}}; color: {{t.color}}; font-size: 14px; font-weight: {{t.weight}}; white-space: nowrap">
+        <span>{{t.label}}</span>
+        <sc-if value="{{t.hasCount}}" hint-placeholder-val="{{true}}">
+          <span style="min-width: 20px; padding: 1px 7px; border-radius: 999px; font-size: 12px; font-weight: 600; background: {{t.countBg}}; color: {{t.countFg}}">{{t.count}}</span>
+        </sc-if>
+      </button>
+    </sc-for>
+  </nav>
+</header>
+
+<sc-if value="{{pollErr}}" hint-placeholder-val="{{false}}">
+  <div role="alert" style="background: #FEF3F2; border-bottom: 1px solid #FECDCA; color: #912018">
+    <div style="max-width: 1440px; margin: 0 auto; padding: 10px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 13px">
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D92D20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+      <span style="flex: 1 1 320px"><strong>Can't reach the SlotMind server.</strong> Retrying every 5 seconds. The list below was last updated at 10:04 AM, so check with the patient before you accept.</span>
+      <button class="hov" onClick="{{retry}}" style="min-height: 36px; padding: 0 14px; border: 1px solid #FDA29B; background: #FFFFFF; color: #912018; border-radius: 8px; font-weight: 600; font-size: 13px">Retry now</button>
+    </div>
+  </div>
+</sc-if>
+
+<main style="max-width: 1440px; margin: 0 auto; padding: 24px; box-sizing: border-box">
+
+<!-- Initial loading -->
+<sc-if value="{{notLoaded}}" hint-placeholder-val="{{false}}">
+  <div aria-busy="true" aria-label="Loading appointments" style="display: flex; flex-wrap: wrap; gap: 24px">
+    <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+      <div class="sk" style="height: 28px; width: 260px"></div>
+      <div class="sk" style="height: 16px; width: 420px"></div>
+      <div class="sk" style="height: 210px"></div>
+      <div class="sk" style="height: 210px"></div>
+    </div>
+    <div style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 16px">
+      <div class="sk" style="height: 300px"></div>
+      <div class="sk" style="height: 220px"></div>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ============ QUEUE ============ -->
+<sc-if value="{{onQueue}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+  <section aria-labelledby="q-h" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px">
+      <div style="flex: 1 1 360px">
+        <h1 id="q-h" style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em">Re-schedule queue</h1>
+        <p style="margin: 4px 0 0; color: #475467; font-size: 14px">Suggestions appear here on their own when a provider goes offline or a slot is cancelled. Call the patient first, then accept.</p>
+      </div>
+      <div role="group" aria-label="Filter by trigger" style="display: flex; flex-wrap: wrap; gap: 6px">
+        <sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+          <button aria-pressed="{{f.on}}" onClick="{{f.go}}" style="min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid {{f.border}}; background: {{f.bg}}; color: {{f.fg}}; font-size: 13px; font-weight: 500">{{f.label}} · {{f.count}}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 10px; font-size: 13px; color: #344054">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{accent}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg>
+      <span>{{strategyNote}}</span>
+    </div>
+
+    <sc-if value="{{queueEmpty}}" hint-placeholder-val="{{false}}">
+      <div style="background: #FFFFFF; border: 1px dashed #D0D5DD; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: #ECFDF3; display: flex; align-items: center; justify-content: center">
+          <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#067647" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+        </div>
+        <h2 style="margin: 0; font-size: 17px; font-weight: 600">{{emptyTitle}}</h2>
+        <p style="margin: 0; max-width: 460px; color: #475467">When a provider goes offline or a slot is cancelled, SlotMind finds every affected appointment and drafts a new time for each one here.</p>
+        <sc-if value="{{canDemo}}" hint-placeholder-val="{{true}}">
+          <button class="prim" onClick="{{demoOffline}}" style="margin-top: 6px; min-height: 44px; padding: 0 18px; border: none; border-radius: 10px; background: {{accent}}; color: #FFFFFF; font-weight: 600; font-size: 14px">Try it: mark Dr. Sarah Chen offline</button>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-for list="{{queue}}" as="q" hint-placeholder-count="2">
+      <article class="fadein" aria-label="{{q.patient}}" style="background: #FFFFFF; border: 1px solid {{q.cardBorder}}; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(16,24,40,0.04)">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 14px 20px; border-bottom: 1px solid #EEF0F3">
+          <h2 style="margin: 0; font-size: 16px; font-weight: 600">{{q.patient}}</h2>
+          <span class="mono" style="font-size: 12px; color: #475467">{{q.apptId}}</span>
+          <span style="padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; background: {{q.typeBg}}; color: {{q.typeFg}}">{{q.typeLabel}}</span>
+          <span style="display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; background: {{q.trigBg}}; color: {{q.trigFg}}">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: {{q.trigFg}}"></span>{{q.trigLabel}}
+          </span>
+          <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: {{q.sourceFg}}">
+            <sc-if value="{{q.isAISource}}" hint-placeholder-val="{{true}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg></sc-if>
+            <sc-if value="{{q.isFallback}}" hint-placeholder-val="{{false}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg></sc-if>
+            {{q.sourceLabel}}
+          </span>
+        </div>
+
+        <!-- Generating -->
+        <sc-if value="{{q.isGenerating}}" hint-placeholder-val="{{false}}">
+          <div aria-busy="true" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; align-items: center; gap: 8px; color: #475467; font-size: 13px">
+              <span class="pulse" style="width: 8px; height: 8px; border-radius: 50%; background: {{accent}}"></span>
+              <span>{{q.generatingText}}</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px">
+              <div class="sk" style="height: 64px; flex: 1 1 180px"></div>
+              <div class="sk" style="height: 64px; flex: 1 1 180px"></div>
+              <div class="sk" style="height: 64px; flex: 1 1 140px"></div>
+            </div>
+            <div class="sk" style="height: 14px; width: 90%"></div>
+            <div class="sk" style="height: 14px; width: 70%"></div>
+          </div>
+        </sc-if>
+
+        <!-- Suggestion ready / streaming -->
+        <sc-if value="{{q.isReady}}" hint-placeholder-val="{{true}}">
+          <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 16px">
+            <div style="display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px">
+              <div style="flex: 1 1 170px; padding: 12px 14px; border-radius: 10px; background: #F9FAFB; border: 1px solid #EEF0F3">
+                <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #475467">Was</div>
+                <div style="margin-top: 4px; font-size: 18px; font-weight: 600; color: #475467; text-decoration: line-through">{{q.origTime}}</div>
+                <div style="font-size: 13px; color: #475467">{{q.origProv}}</div>
+              </div>
+              <div aria-hidden="true" style="display: flex; align-items: center; color: #98A2B3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+              </div>
+              <div style="flex: 1 1 200px; padding: 12px 14px; border-radius: 10px; background: {{q.toBg}}; border: 1px solid {{q.toBorder}}">
+                <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{accent}}">Suggested · today</div>
+                <div style="margin-top: 4px; font-size: 18px; font-weight: 700">{{q.sugTime}} <span style="font-size: 13px; font-weight: 500; color: #475467">· {{q.sugDur}}</span></div>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: #344054">
+                  <span>{{q.sugProv}}</span>
+                  <sc-if value="{{q.isAlt}}" hint-placeholder-val="{{true}}">
+                    <span style="padding: 1px 6px; border-radius: 5px; background: #FEF0E1; color: #93370D; font-size: 11px; font-weight: 600">Different doctor</span>
+                  </sc-if>
+                </div>
+              </div>
+              <div style="flex: 1 1 150px; padding: 12px 14px; border-radius: 10px; border: 1px solid #EEF0F3">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #475467"><span>{{q.confTitle}}</span><span style="color: {{q.confColor}}">{{q.confLabel}}</span></div>
+                <div style="margin-top: 4px; font-size: 18px; font-weight: 700" class="mono">{{q.confPct}}</div>
+                <div style="margin-top: 6px; height: 6px; border-radius: 99px; background: #EEF0F3; overflow: hidden">
+                  <div style="height: 100%; width: {{q.confPct}}; background: {{q.confColor}}; border-radius: 99px; transition: width 0.6s"></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="padding: 14px 16px; border-radius: 10px; background: #F8FAFF; border: 1px solid #E0E8FB">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{accent}}">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M15.5 8.5a5 5 0 010 7M19 5a10 10 0 010 14"></path></svg>
+                <span>{{q.readLabel}}</span>
+                <sc-if value="{{q.isStreaming}}" hint-placeholder-val="{{false}}">
+                  <span style="margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; color: #475467">Streaming reasoning…</span>
+                </sc-if>
+              </div>
+              <p aria-live="polite" style="margin: 8px 0 0; font-size: 16px; line-height: 1.6; color: #101828">{{q.reasoning}}<sc-if value="{{q.isStreaming}}" hint-placeholder-val="{{false}}"><span class="caret" aria-hidden="true"></span></sc-if></p>
+            </div>
+
+            <sc-if value="{{q.hasConflict}}" hint-placeholder-val="{{false}}">
+              <div role="alert" style="display: flex; gap: 10px; padding: 12px 14px; border-radius: 10px; background: #FEF3F2; border: 1px solid #FECDCA; color: #912018; font-size: 13px">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D92D20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+                <span><strong>Slot no longer free.</strong> {{q.conflictText}}</span>
+              </div>
+            </sc-if>
+
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+              <span style="flex: 1 1 200px; font-size: 12px; color: #475467">Accepting moves the appointment, frees the old slot and books the new one in a single step.</span>
+              <button class="hov" onClick="{{q.reject}}" disabled="{{q.rejectDisabled}}" style="min-height: 44px; padding: 0 16px; border: 1px solid #D0D5DD; background: #FFFFFF; color: #344054; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: {{q.rejectOpacity}}">Reject</button>
+              <button class="hov" onClick="{{q.another}}" disabled="{{q.anotherDisabled}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border: 1px solid #D0D5DD; background: #FFFFFF; color: #344054; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: {{q.anotherOpacity}}">
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7L21 8"></path><path d="M21 3v5h-5"></path></svg>
+                Suggest another
+              </button>
+              <button class="prim" onClick="{{q.accept}}" disabled="{{q.acceptDisabled}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border: none; background: {{accent}}; color: #FFFFFF; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: {{q.acceptOpacity}}">
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+                Patient agreed · Accept
+              </button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- No option -->
+        <sc-if value="{{q.isNoOption}}" hint-placeholder-val="{{false}}">
+          <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+            <div style="display: flex; gap: 12px; padding: 14px 16px; border-radius: 10px; background: #FFFAEB; border: 1px solid #FEDF89; color: #7A2E0E">
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC6803" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path></svg>
+              <div>
+                <div style="font-weight: 600">No open slot fits today</div>
+                <div style="font-size: 15px; margin-top: 4px; line-height: 1.55">{{q.reasoning}}</div>
+              </div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px">
+              <button class="hov" onClick="{{q.another}}" style="min-height: 44px; padding: 0 16px; border: 1px solid #D0D5DD; background: #FFFFFF; color: #344054; border-radius: 10px; font-size: 14px; font-weight: 600">Try again</button>
+              <button class="prim" onClick="{{q.waitlist}}" style="min-height: 44px; padding: 0 18px; border: none; background: {{accent}}; color: #FFFFFF; border-radius: 10px; font-size: 14px; font-weight: 600">Add to waitlist</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- Rejected -->
+        <sc-if value="{{q.isRejected}}" hint-placeholder-val="{{false}}">
+          <div style="padding: 18px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+            <div style="flex: 1 1 280px">
+              <div style="font-weight: 600">Still needs a new time</div>
+              <div style="color: #475467; font-size: 13px; margin-top: 2px">{{q.rejectedText}}</div>
+            </div>
+            <button class="hov" onClick="{{q.waitlist}}" style="min-height: 44px; padding: 0 16px; border: 1px solid #D0D5DD; background: #FFFFFF; color: #344054; border-radius: 10px; font-size: 14px; font-weight: 600">Add to waitlist</button>
+            <button class="prim" onClick="{{q.another}}" style="min-height: 44px; padding: 0 18px; border: none; background: {{accent}}; color: #FFFFFF; border-radius: 10px; font-size: 14px; font-weight: 600">Suggest another time</button>
+          </div>
+        </sc-if>
+      </article>
+    </sc-for>
+
+    <sc-if value="{{hasHistory}}" hint-placeholder-val="{{true}}">
+      <div style="margin-top: 8px">
+        <h2 style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #344054">Resolved today</h2>
+        <div style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 12px; overflow: hidden">
+          <sc-for list="{{history}}" as="h" hint-placeholder-count="2">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 16px; border-bottom: 1px solid #EEF0F3">
+              <span style="padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; background: {{h.bg}}; color: {{h.fg}}">{{h.status}}</span>
+              <span style="font-weight: 600">{{h.patient}}</span>
+              <span style="color: #475467; font-size: 13px; flex: 1 1 260px">{{h.text}}</span>
+              <span style="padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 500; background: {{h.trigBg}}; color: {{h.trigFg}}">{{h.trigLabel}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </section>
+
+  <!-- Rail -->
+  <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+    <section aria-labelledby="rail-p" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; overflow: hidden">
+      <div style="padding: 14px 16px; border-bottom: 1px solid #EEF0F3">
+        <h2 id="rail-p" style="margin: 0; font-size: 15px; font-weight: 600">Providers today</h2>
+        <p style="margin: 2px 0 0; font-size: 12px; color: #475467">Marking a provider offline queues a suggestion for each of their confirmed patients.</p>
+      </div>
+      <sc-for list="{{railProviders}}" as="p" hint-placeholder-count="5">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid #F2F4F7">
+          <span style="width: 34px; height: 34px; border-radius: 50%; background: {{p.avatarBg}}; color: {{p.avatarFg}}; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0">{{p.initials}}</span>
+          <div style="flex: 1; min-width: 0">
+            <div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{p.name}}</div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #475467">
+              <span style="display: inline-flex; align-items: center; gap: 4px; color: {{p.fg}}; font-weight: 600"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{p.dot}}"></span>{{p.statusLabel}}</span>
+              <span>· {{p.spec}} · {{p.count}}</span>
+            </div>
+          </div>
+          <button class="hov" onClick="{{p.toggle}}" aria-label="{{p.toggleAria}}" style="min-height: 36px; padding: 0 10px; border: 1px solid #D0D5DD; background: #FFFFFF; border-radius: 8px; font-size: 12px; font-weight: 600; color: {{p.toggleFg}}; white-space: nowrap">{{p.toggleLabel}}</button>
+        </div>
+      </sc-for>
+    </section>
+
+    <section aria-labelledby="rail-l" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; overflow: hidden">
+      <div style="padding: 14px 16px; border-bottom: 1px solid #EEF0F3; display: flex; align-items: center; gap: 8px">
+        <h2 id="rail-l" style="margin: 0; font-size: 15px; font-weight: 600; flex: 1">Agent activity</h2>
+        <span style="font-size: 12px; color: #475467">Runs in the background</span>
+      </div>
+      <ol aria-live="polite" style="list-style: none; margin: 0; padding: 8px 0; max-height: 360px; overflow-y: auto">
+        <sc-for list="{{log}}" as="l" hint-placeholder-count="3">
+          <li style="display: flex; gap: 10px; padding: 7px 16px; font-size: 12px; line-height: 1.5">
+            <span class="mono" style="color: #475467; flex-shrink: 0; width: 62px">{{l.t}}</span>
+            <span style="width: 7px; height: 7px; margin-top: 5px; border-radius: 50%; background: {{l.dot}}; flex-shrink: 0"></span>
+            <span style="color: #344054; min-width: 0; overflow-wrap: anywhere">{{l.text}}</span>
+          </li>
+        </sc-for>
+      </ol>
+    </section>
+  </aside>
+</div>
+</sc-if>
+
+<!-- ============ DAY VIEW ============ -->
+<sc-if value="{{onDay}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+  <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px">
+    <div style="flex: 1 1 360px">
+      <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em">Day view</h1>
+      <p style="margin: 4px 0 0; color: #475467">Every provider's slots for today. Select a slot to cancel it or get a new time for its patient.</p>
+    </div>
+    <ul aria-label="Legend" style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: #344054">
+      <sc-for list="{{legend}}" as="g" hint-placeholder-count="7">
+        <li style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 14px; border-radius: 4px; background: {{g.bg}}; border: {{g.bd}}"></span>{{g.label}}</li>
+      </sc-for>
+    </ul>
+  </div>
+
+  <div style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; overflow-x: auto">
+    <div style="min-width: 980px">
+      <div style="display: flex; border-bottom: 1px solid #EEF0F3">
+        <div style="width: 220px; flex-shrink: 0; padding: 10px 16px; font-size: 12px; font-weight: 600; color: #475467">Provider</div>
+        <div style="flex: 1; position: relative; height: 38px; margin-right: 16px">
+          <sc-for list="{{hours}}" as="hr" hint-placeholder-count="9">
+            <span class="mono" style="position: absolute; top: 11px; left: {{hr.left}}; transform: translateX(-50%); font-size: 11px; color: #475467">{{hr.label}}</span>
+          </sc-for>
+        </div>
+      </div>
+      <sc-for list="{{dayRows}}" as="r" hint-placeholder-count="5">
+        <div style="display: flex; border-bottom: 1px solid #F2F4F7; background: {{r.rowBg}}">
+          <div style="width: 220px; flex-shrink: 0; padding: 12px 16px; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-weight: 600; font-size: 13px">{{r.name}}</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #475467"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{r.dot}}"></span><span style="color: {{r.fg}}; font-weight: 600">{{r.statusLabel}}</span> · {{r.spec}}</span>
+          </div>
+          <div style="flex: 1; position: relative; height: 68px; margin-right: 16px">
+            <sc-for list="{{hours}}" as="hr" hint-placeholder-count="9">
+              <span aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{hr.left}}; width: 1px; background: #F2F4F7"></span>
+            </sc-for>
+            <span aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: 12.5%; width: 2px; background: #F04438; opacity: 0.7"></span>
+            <sc-for list="{{r.slots}}" as="s" hint-placeholder-count="3">
+              <button class="slotbtn" onClick="{{s.select}}" aria-label="{{s.aria}}" aria-pressed="{{s.selected}}" style="position: absolute; top: 9px; bottom: 9px; left: {{s.left}}; width: {{s.width}}; box-sizing: border-box; padding: 4px 6px; border-radius: 7px; background: {{s.bg}}; border: {{s.bd}}; color: {{s.fg}}; box-shadow: {{s.ring}}; text-align: left; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 1px">
+                <span class="mono" style="font-size: 10.5px; font-weight: 500; white-space: nowrap">{{s.time}}</span>
+                <span style="font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: {{s.deco}}">{{s.label}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 16px 20px">
+    <sc-if value="{{noSel}}" hint-placeholder-val="{{true}}">
+      <p style="margin: 0; color: #475467">Select a slot above to see its details. The red line marks the current time.</p>
+    </sc-if>
+    <sc-if value="{{hasSel}}" hint-placeholder-val="{{false}}">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+        <div style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 4px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+            <span class="mono" style="font-size: 12px; color: #475467">{{sel.id}}</span>
+            <span style="padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; background: {{sel.stBg}}; color: {{sel.stFg}}">{{sel.statusLabel}}</span>
+          </div>
+          <div style="font-size: 17px; font-weight: 600">{{sel.range}} · {{sel.provider}}</div>
+          <div style="color: #475467">{{sel.who}}</div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <sc-if value="{{sel.canSuggest}}" hint-placeholder-val="{{true}}">
+            <button class="hov" onClick="{{sel.suggest}}" style="min-height: 44px; padding: 0 16px; border: 1px solid #D0D5DD; background: #FFFFFF; color: #344054; border-radius: 10px; font-weight: 600; font-size: 14px">Suggest new time</button>
+          </sc-if>
+          <sc-if value="{{sel.canCancel}}" hint-placeholder-val="{{true}}">
+            <button class="prim" onClick="{{sel.cancel}}" style="min-height: 44px; padding: 0 16px; border: none; background: #B42318; color: #FFFFFF; border-radius: 10px; font-weight: 600; font-size: 14px">Cancel slot</button>
+          </sc-if>
+          <button class="hov" onClick="{{sel.close}}" style="min-height: 44px; padding: 0 14px; border: 1px solid transparent; background: transparent; color: #475467; border-radius: 10px; font-weight: 600; font-size: 14px">Close</button>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ APPOINTMENTS ============ -->
+<sc-if value="{{onAppts}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+  <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px">
+    <div style="flex: 1 1 360px">
+      <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em">Appointments</h1>
+      <p style="margin: 4px 0 0; color: #475467">Today's bookings at Downtown Clinic.</p>
+    </div>
+    <button class="prim" onClick="{{toggleForm}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border: none; background: {{accent}}; color: #FFFFFF; border-radius: 10px; font-weight: 600; font-size: 14px">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+      {{formBtnLabel}}
+    </button>
+  </div>
+
+  <sc-if value="{{showForm}}" hint-placeholder-val="{{false}}">
+    <form onSubmit="{{book}}" class="fadein" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-size: 16px; font-weight: 600">Book an appointment</h2>
+      <div style="display: flex; flex-direction: column; gap: 6px; max-width: 420px">
+        <label for="pt-name" style="font-size: 13px; font-weight: 600; color: #344054">Patient name</label>
+        <input id="pt-name" value="{{form.name}}" onChange="{{onName}}" placeholder="First and last name" style="min-height: 44px; padding: 0 12px; border: 1px solid #D0D5DD; border-radius: 10px; font-size: 14px; font-family: inherit">
+      </div>
+      <div role="group" aria-label="Appointment type" style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 13px; font-weight: 600; color: #344054">Type</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <sc-for list="{{formTypes}}" as="o" hint-placeholder-count="3">
+            <button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid {{o.border}}; background: {{o.bg}}; color: {{o.fg}}; font-size: 13px; font-weight: 600">{{o.label}}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div role="group" aria-label="Provider" style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 13px; font-weight: 600; color: #344054">Provider</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <sc-for list="{{formProviders}}" as="o" hint-placeholder-count="4">
+            <button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" disabled="{{o.off}}" style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid {{o.border}}; background: {{o.bg}}; color: {{o.fg}}; font-size: 13px; font-weight: 600; opacity: {{o.opacity}}">{{o.label}}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div role="group" aria-label="Open slot" style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 13px; font-weight: 600; color: #344054">Open slot</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <sc-for list="{{formSlots}}" as="o" hint-placeholder-count="3">
+            <button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" class="mono" style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid {{o.border}}; background: {{o.bg}}; color: {{o.fg}}; font-size: 13px; font-weight: 500">{{o.label}}</button>
+          </sc-for>
+          <sc-if value="{{noFormSlots}}" hint-placeholder-val="{{false}}">
+            <span style="font-size: 13px; color: #475467; padding: 10px 0">No open slots left today for this provider.</span>
+          </sc-if>
+        </div>
+      </div>
+      <sc-if value="{{hasFormError}}" hint-placeholder-val="{{false}}">
+        <p role="alert" style="margin: 0; color: #B42318; font-size: 13px; font-weight: 500">{{form.error}}</p>
+      </sc-if>
+      <div style="display: flex; gap: 8px">
+        <button type="submit" class="prim" style="min-height: 44px; padding: 0 18px; border: none; background: {{accent}}; color: #FFFFFF; border-radius: 10px; font-weight: 600; font-size: 14px">Book appointment</button>
+        <button type="button" class="hov" onClick="{{toggleForm}}" style="min-height: 44px; padding: 0 16px; border: 1px solid #D0D5DD; background: #FFFFFF; color: #344054; border-radius: 10px; font-weight: 600; font-size: 14px">Cancel</button>
+      </div>
+    </form>
+  </sc-if>
+
+  <div role="group" aria-label="Filter by status" style="display: flex; flex-wrap: wrap; gap: 6px">
+    <sc-for list="{{apptFilters}}" as="f" hint-placeholder-count="5">
+      <button aria-pressed="{{f.on}}" onClick="{{f.go}}" style="min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid {{f.border}}; background: {{f.bg}}; color: {{f.fg}}; font-size: 13px; font-weight: 500">{{f.label}} · {{f.count}}</button>
+    </sc-for>
+  </div>
+
+  <div style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; overflow-x: auto">
+    <div style="min-width: 860px">
+      <div style="display: grid; grid-template-columns: 1.6fr 1fr 1.6fr 1fr 1.3fr 1.3fr; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #EEF0F3; font-size: 12px; font-weight: 600; color: #475467">
+        <span>Patient</span><span>Type</span><span>Provider</span><span>Time</span><span>Status</span><span style="text-align: right">Action</span>
+      </div>
+      <sc-for list="{{apptRows}}" as="a" hint-placeholder-count="6">
+        <div style="display: grid; grid-template-columns: 1.6fr 1fr 1.6fr 1fr 1.3fr 1.3fr; gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid #F2F4F7">
+          <span style="display: flex; flex-direction: column"><span style="font-weight: 600">{{a.patient}}</span><span class="mono" style="font-size: 11px; color: #475467">{{a.id}}</span></span>
+          <span><span style="padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; background: {{a.typeBg}}; color: {{a.typeFg}}">{{a.typeLabel}}</span></span>
+          <span style="color: #344054">{{a.provider}}</span>
+          <span class="mono" style="font-size: 13px">{{a.time}}</span>
+          <span><span style="padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; background: {{a.stBg}}; color: {{a.stFg}}">{{a.statusLabel}}</span></span>
+          <span style="display: flex; justify-content: flex-end">
+            <sc-if value="{{a.canSuggest}}" hint-placeholder-val="{{true}}">
+              <button class="hov" onClick="{{a.suggest}}" style="min-height: 36px; padding: 0 12px; border: 1px solid #D0D5DD; background: #FFFFFF; color: #344054; border-radius: 8px; font-size: 12px; font-weight: 600">Suggest new time</button>
+            </sc-if>
+            <sc-if value="{{a.isPending}}" hint-placeholder-val="{{false}}">
+              <button class="hov" onClick="{{a.open}}" style="min-height: 36px; padding: 0 12px; border: 1px solid transparent; background: transparent; color: {{accent}}; border-radius: 8px; font-size: 12px; font-weight: 600">Open in queue</button>
+            </sc-if>
+          </span>
+        </div>
+      </sc-for>
+      <sc-if value="{{noApptRows}}" hint-placeholder-val="{{false}}">
+        <p style="margin: 0; padding: 24px 16px; color: #475467; text-align: center">No appointments with this status.</p>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ PROVIDERS ============ -->
+<sc-if value="{{onProviders}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+  <div>
+    <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em">Providers</h1>
+    <p style="margin: 4px 0 0; color: #475467">Status and workload for today. Setting a provider to Offline moves all of their confirmed patients into the re-schedule queue.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px">
+    <sc-for list="{{providerCards}}" as="p" hint-placeholder-count="5">
+      <section aria-label="{{p.name}}" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span style="width: 42px; height: 42px; border-radius: 50%; background: {{p.avatarBg}}; color: {{p.avatarFg}}; display: flex; align-items: center; justify-content: center; font-weight: 700">{{p.initials}}</span>
+          <div style="flex: 1; min-width: 0">
+            <div style="font-weight: 600; font-size: 15px">{{p.name}}</div>
+            <div style="font-size: 12px; color: #475467">{{p.spec}} · <span class="mono">{{p.id}}</span></div>
+          </div>
+        </div>
+        <div role="group" aria-label="Status" style="display: flex; padding: 3px; background: #EEF0F3; border-radius: 10px; gap: 2px">
+          <sc-for list="{{p.statuses}}" as="o" hint-placeholder-count="3">
+            <button aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="flex: 1; min-height: 36px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; background: {{o.bg}}; color: {{o.fg}}; box-shadow: {{o.shadow}}">{{o.label}}</button>
+          </sc-for>
+        </div>
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #475467"><span>Load today</span><span><strong style="color: #101828">{{p.loadPct}}</strong> · {{p.loadText}}</span></div>
+          <div style="margin-top: 6px; height: 8px; border-radius: 99px; background: #EEF0F3; overflow: hidden"><div style="height: 100%; width: {{p.loadPct}}; background: {{p.loadColor}}; border-radius: 99px"></div></div>
+        </div>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{p.upcoming}}" as="u" hint-placeholder-count="2">
+            <li style="display: flex; align-items: center; gap: 8px; font-size: 13px">
+              <span class="mono" style="width: 70px; color: #475467">{{u.time}}</span>
+              <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{u.label}}</span>
+              <span style="padding: 1px 6px; border-radius: 5px; font-size: 11px; font-weight: 600; background: {{u.bg}}; color: {{u.fg}}">{{u.tag}}</span>
+            </li>
+          </sc-for>
+        </ul>
+      </section>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ WAITLIST ============ -->
+<sc-if value="{{onWaitlist}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+  <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px">
+    <div style="flex: 1 1 360px">
+      <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em">Waitlist</h1>
+      <p style="margin: 4px 0 0; color: #475467">Patients who want an earlier time. Open slots that match their needs are shown next to each one.</p>
+    </div>
+    <span style="padding: 4px 10px; border-radius: 999px; background: #F2EEFC; color: #5925DC; font-size: 12px; font-weight: 600">Preview · auto-fill comes in sprint 3</span>
+  </div>
+  <div style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 14px; overflow-x: auto">
+    <div style="min-width: 820px">
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr 1.1fr 1fr 1fr 1.6fr; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #EEF0F3; font-size: 12px; font-weight: 600; color: #475467">
+        <span>Patient</span><span>Type</span><span>Needs</span><span>Prefers</span><span>Waiting</span><span style="text-align: right">Best match</span>
+      </div>
+      <sc-for list="{{waitRows}}" as="w" hint-placeholder-count="4">
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr 1.1fr 1fr 1fr 1.6fr; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #F2F4F7">
+          <span style="font-weight: 600">{{w.patient}}</span>
+          <span><span style="padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; background: {{w.typeBg}}; color: {{w.typeFg}}">{{w.typeLabel}}</span></span>
+          <span style="color: #344054">{{w.spec}}</span>
+          <span style="color: #344054">{{w.pref}}</span>
+          <span style="color: #475467">{{w.waiting}}</span>
+          <span style="display: flex; justify-content: flex-end; align-items: center; gap: 8px">
+            <sc-if value="{{w.hasMatch}}" hint-placeholder-val="{{true}}">
+              <button class="hov" onClick="{{w.offer}}" disabled="{{w.offered}}" style="min-height: 36px; padding: 0 12px; border: 1px solid #D0D5DD; background: #FFFFFF; color: #344054; border-radius: 8px; font-size: 12px; font-weight: 600; opacity: {{w.offerOpacity}}">{{w.offerLabel}}</button>
+            </sc-if>
+            <sc-if value="{{w.noMatch}}" hint-placeholder-val="{{false}}">
+              <span style="font-size: 12px; color: #475467">No matching slot yet</span>
+            </sc-if>
+          </span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+</main>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{false}}">
+  <div role="status" class="fadein" style="position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); max-width: calc(100% - 32px); display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; background: {{toastBg}}; color: #FFFFFF; font-size: 14px; font-weight: 500; box-shadow: 0 12px 32px rgba(16,24,40,0.24); z-index: 50">
+    <span style="width: 8px; height: 8px; border-radius: 50%; background: {{toastDot}}; flex-shrink: 0"></span>
+    <span>{{toastText}}</span>
+  </div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1D4ED8","options":["#1D4ED8","#0B6E5A","#5B3FD0","#101828"]},"simulateLlmFailure":{"editor":"boolean","default":false,"section":"Demo"},"showPollingError":{"editor":"boolean","default":false,"section":"Demo"},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.TYPE = {
+      ROUTINE: { label: 'Routine', fg: '#1D4ED8', bg: '#EAF0FD', visit: 'check-up' },
+      FOLLOW_UP: { label: 'Follow-up', fg: '#0B6E5A', bg: '#E3F4EF', visit: 'follow-up visit' },
+      URGENT: { label: 'Urgent', fg: '#B42318', bg: '#FDECEB', visit: 'urgent visit' }
+    };
+    this.TRIG = {
+      PROVIDER_OFFLINE: { label: 'Provider offline', fg: '#B54708', bg: '#FEF0E1' },
+      SLOT_CANCELLED: { label: 'Slot cancelled', fg: '#6941C6', bg: '#F2EEFC' },
+      INITIAL: { label: 'Manual', fg: '#344054', bg: '#EEF0F3' }
+    };
+    this.PSTAT = {
+      AVAILABLE: { label: 'Available', fg: '#067647', dot: '#12B76A' },
+      BUSY: { label: 'Busy', fg: '#1D4ED8', dot: '#2E6BF0' },
+      OFFLINE: { label: 'Offline', fg: '#B54708', dot: '#F79009' }
+    };
+    this.ASTAT = {
+      CONFIRMED: { label: 'Confirmed', fg: '#067647', bg: '#E5F5EC' },
+      RESCHEDULE_PENDING: { label: 'Reschedule pending', fg: '#B54708', bg: '#FEF0E1' },
+      RESCHEDULED: { label: 'Rescheduled', fg: '#1D4ED8', bg: '#EAF0FD' },
+      COMPLETED: { label: 'Completed', fg: '#475467', bg: '#F2F4F7' }
+    };
+    this.SPEC = {
+      GENERAL: { label: 'General practice', noun: 'general physician' },
+      SPECIALIST: { label: 'Specialist', noun: 'specialist' },
+      PEDIATRIC: { label: 'Pediatrics', noun: 'pediatrician' }
+    };
+    this.NOW = 600;
+    this.state = {
+      loaded: false, tab: 'queue', filter: 'ALL', apptFilter: 'ALL', strategy: 'AI',
+      pollAgo: 0, seq: 1, apptSeq: 8, selectedSlot: null, toast: null, showForm: false,
+      form: { name: '', type: 'ROUTINE', providerId: 'PRV-004', slotId: '', error: '' },
+      providers: [
+        { id: 'PRV-001', name: 'Dr. Sarah Chen', specialty: 'GENERAL', status: 'BUSY' },
+        { id: 'PRV-002', name: 'Dr. James Okonkwo', specialty: 'SPECIALIST', status: 'AVAILABLE' },
+        { id: 'PRV-003', name: 'Dr. Priya Sharma', specialty: 'PEDIATRIC', status: 'BUSY' },
+        { id: 'PRV-004', name: 'Dr. Rahul Verma', specialty: 'GENERAL', status: 'AVAILABLE' },
+        { id: 'PRV-005', name: 'Dr. Ananya Iyer', specialty: 'SPECIALIST', status: 'BUSY' }
+      ],
+      slots: [
+        { id: 'SLT-001', providerId: 'PRV-001', start: 660, dur: 30, status: 'BOOKED' },
+        { id: 'SLT-002', providerId: 'PRV-001', start: 720, dur: 30, status: 'BOOKED' },
+        { id: 'SLT-003', providerId: 'PRV-003', start: 690, dur: 45, status: 'BOOKED' },
+        { id: 'SLT-004', providerId: 'PRV-002', start: 780, dur: 30, status: 'OPEN' },
+        { id: 'SLT-005', providerId: 'PRV-004', start: 750, dur: 30, status: 'OPEN' },
+        { id: 'SLT-006', providerId: 'PRV-005', start: 840, dur: 60, status: 'BOOKED' },
+        { id: 'SLT-007', providerId: 'PRV-004', start: 870, dur: 30, status: 'OPEN' },
+        { id: 'SLT-008', providerId: 'PRV-001', start: 900, dur: 30, status: 'OPEN' },
+        { id: 'SLT-009', providerId: 'PRV-003', start: 930, dur: 45, status: 'OPEN' },
+        { id: 'SLT-010', providerId: 'PRV-002', start: 960, dur: 30, status: 'OPEN' },
+        { id: 'SLT-011', providerId: 'PRV-005', start: 960, dur: 60, status: 'OPEN' },
+        { id: 'SLT-012', providerId: 'PRV-004', start: 960, dur: 30, status: 'OPEN' },
+        { id: 'SLT-013', providerId: 'PRV-002', start: 630, dur: 30, status: 'BOOKED' },
+        { id: 'SLT-014', providerId: 'PRV-004', start: 630, dur: 30, status: 'BOOKED' },
+        { id: 'SLT-015', providerId: 'PRV-003', start: 570, dur: 30, status: 'BOOKED' }
+      ],
+      appts: [
+        { id: 'APT-001', patient: 'John Martinez', type: 'ROUTINE', providerId: 'PRV-001', slotId: 'SLT-001', status: 'CONFIRMED' },
+        { id: 'APT-002', patient: 'Emily Watson', type: 'FOLLOW_UP', providerId: 'PRV-001', slotId: 'SLT-002', status: 'CONFIRMED' },
+        { id: 'APT-003', patient: 'Aisha Patel', type: 'URGENT', providerId: 'PRV-003', slotId: 'SLT-003', status: 'CONFIRMED' },
+        { id: 'APT-004', patient: 'Robert Kim', type: 'ROUTINE', providerId: 'PRV-005', slotId: 'SLT-006', status: 'CONFIRMED' },
+        { id: 'APT-005', patient: 'Maria Gonzalez', type: 'FOLLOW_UP', providerId: 'PRV-002', slotId: 'SLT-013', status: 'CONFIRMED' },
+        { id: 'APT-006', patient: 'Liam Brennan', type: 'ROUTINE', providerId: 'PRV-004', slotId: 'SLT-014', status: 'CONFIRMED' },
+        { id: 'APT-007', patient: 'Noah Fischer', type: 'ROUTINE', providerId: 'PRV-003', slotId: 'SLT-015', status: 'COMPLETED' }
+      ],
+      waitlist: [
+        { id: 'W1', patient: 'Grace Liu', type: 'ROUTINE', specialty: 'GENERAL', pref: 'AFTERNOON', waiting: '3 days', offered: false },
+        { id: 'W2', patient: 'Daniel Osei', type: 'FOLLOW_UP', specialty: 'SPECIALIST', pref: 'ANY', waiting: '1 day', offered: false },
+        { id: 'W3', patient: 'Mia Rossi', type: 'URGENT', specialty: 'PEDIATRIC', pref: 'MORNING', waiting: '2 hours', offered: false },
+        { id: 'W4', patient: 'Omar Haddad', type: 'ROUTINE', specialty: 'GENERAL', pref: 'MORNING', waiting: '5 days', offered: false }
+      ],
+      suggestions: [],
+      log: [{ t: '10:00 AM', text: 'Polling GET /appointments?status=RESCHEDULE_PENDING every 5s', kind: 'info' }]
+    };
+  }
+
+  componentDidMount() {
+    this.t0 = Date.now();
+    this.n = 0;
+    this.loadTimer = setTimeout(() => this.setState({ loaded: true }), 900);
+    this.iv = setInterval(() => this.tick(), 60);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.iv);
+    clearTimeout(this.loadTimer);
+    clearTimeout(this.toastTimer);
+  }
+
+  tick() {
+    this.n += 1;
+    const sec = this.n % 17 === 0;
+    const streaming = this.state.suggestions.some((s) => s.status === 'STREAMING');
+    if (!sec && !streaming) return;
+    this.setState((st) => {
+      const out = {};
+      if (sec) out.pollAgo = (st.pollAgo + 1) % 5;
+      if (streaming) {
+        out.suggestions = st.suggestions.map((s) => {
+          if (s.status !== 'STREAMING') return s;
+          const next = s.shown + 6;
+          return next >= s.reasoning.length ? { ...s, shown: s.reasoning.length, status: 'PENDING' } : { ...s, shown: next };
+        });
+      }
+      return out;
+    });
+  }
+
+  fmt(m) {
+    const h = Math.floor(m / 60), mm = m % 60;
+    return (h % 12 || 12) + ':' + String(mm).padStart(2, '0') + ' ' + (h >= 12 ? 'PM' : 'AM');
+  }
+
+  dur(m) {
+    const h = Math.floor(m / 60), mm = m % 60;
+    if (!h) return mm + ' min';
+    return h + (h === 1 ? ' hour' : ' hours') + (mm ? ' ' + mm + ' min' : '');
+  }
+
+  nowMin() {
+    return this.NOW + Math.floor((Date.now() - (this.t0 || Date.now())) / 60000);
+  }
+
+  addLog(log, text, kind) {
+    return [{ t: this.fmt(this.nowMin()), text, kind }].concat(log).slice(0, 40);
+  }
+
+  toast(text, kind) {
+    clearTimeout(this.toastTimer);
+    this.setState({ toast: { text, kind } });
+    this.toastTimer = setTimeout(() => this.setState({ toast: null }), 4200);
+  }
+
+  initials(name) {
+    const parts = name.replace('Dr. ', '').split(' ');
+    return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+  }
+
+  // ---- Scheduling engine: same contract for both strategies ----
+  engine(st, a, trigger, exclude) {
+    const wantAI = st.strategy === 'AI';
+    const useAI = wantAI && !this.props.simulateLlmFailure;
+    const source = useAI ? 'AI' : (wantAI ? 'FALLBACK' : 'RULE');
+    const prov = (id) => st.providers.find((p) => p.id === id);
+    const op = prov(a.providerId);
+    const os = st.slots.find((s) => s.id === a.slotId);
+    const held = {};
+    st.suggestions.forEach((s) => {
+      if (s.slotId && s.apptId !== a.id && (s.status === 'PENDING' || s.status === 'STREAMING')) held[s.slotId] = true;
+    });
+    let c = st.slots.filter((s) => s.status === 'OPEN' && s.start > this.NOW && prov(s.providerId).status !== 'OFFLINE' && exclude.indexOf(s.id) < 0);
+    if (useAI) c = c.filter((s) => !held[s.id]);
+    c.sort((x, y) => x.start - y.start);
+    const same = c.filter((s) => s.providerId === a.providerId);
+    const spec = c.filter((s) => prov(s.providerId).specialty === op.specialty);
+    let pick = same[0] || spec[0] || null;
+    if (useAI && a.type === 'URGENT' && same[0] && spec[0] && same[0].start - spec[0].start > 30) pick = spec[0];
+    if (!pick) {
+      return {
+        slotId: null, altProviderId: null, confidence: null, source,
+        reasoning: 'There are no open times with a ' + this.SPEC[op.specialty].noun + ' for the rest of today. We can add you to the waitlist and call you as soon as something opens up.'
+      };
+    }
+    const np = prov(pick.providerId);
+    const isAlt = np.id !== op.id;
+    const delay = pick.start - os.start;
+    let conf;
+    if (useAI) {
+      conf = isAlt ? 0.86 : 0.93;
+      if (Math.abs(delay) > 180) conf -= 0.09;
+      if (a.type === 'URGENT' && delay > 90) conf -= 0.12;
+      if (a.type === 'FOLLOW_UP' && isAlt) conf -= 0.05;
+    } else {
+      conf = isAlt ? 0.64 : 0.72;
+    }
+    conf = Math.max(0.4, Math.min(0.97, conf));
+    const reasoning = useAI ? this.aiText(a, trigger, op, np, os, pick, isAlt, delay) : this.ruleText(op, np, pick, isAlt);
+    return { slotId: pick.id, altProviderId: isAlt ? np.id : null, confidence: Math.round(conf * 100) / 100, source, reasoning };
+  }
+
+  aiText(a, trigger, op, np, os, ns, isAlt, delay) {
+    const t = this.fmt(ns.start), t0 = this.fmt(os.start);
+    const visit = this.TYPE[a.type].visit;
+    const noun = this.SPEC[np.specialty].noun;
+    let s;
+    if (trigger === 'PROVIDER_OFFLINE') {
+      s = op.name + ' is unavailable today, so we would like to move your ' + visit + ' to ' + t + ' with ' + np.name + ', who is also a ' + noun + '.';
+    } else if (trigger === 'SLOT_CANCELLED') {
+      s = isAlt
+        ? 'Your ' + t0 + ' appointment had to be cancelled, and ' + op.name + ' has no other openings today. ' + np.name + ', also a ' + noun + ', can see you at ' + t + '.'
+        : 'Your ' + t0 + ' appointment had to be cancelled, but ' + op.name + ' has another opening today at ' + t + ', so you can keep seeing the same doctor.';
+    } else {
+      s = isAlt
+        ? 'We can move your ' + visit + ' to ' + t + ' with ' + np.name + ', also a ' + noun + '.'
+        : 'We can move your ' + visit + ' to ' + t + ' with ' + op.name + ', the same doctor you were booked with.';
+    }
+    if (delay > 0 && delay <= 120) s += ' That is ' + this.dur(delay) + ' later than your original time.';
+    else if (delay < 0) s += ' That is ' + this.dur(-delay) + ' earlier than your original time.';
+    else s += ' It is the closest suitable time we have today.';
+    if (a.type === 'URGENT') s += ' Because your visit is urgent, we chose the earliest opening.';
+    if (a.type === 'FOLLOW_UP' && isAlt) s += ' ' + np.name + ' will have the notes from your last visit.';
+    return s;
+  }
+
+  ruleText(op, np, ns, isAlt) {
+    return 'Rule match: ' + (isAlt ? 'same specialty (' + this.SPEC[np.specialty].label + '), different provider' : 'same provider') + '. Nearest open slot is ' + this.fmt(ns.start) + ' with ' + np.name + '.';
+  }
+
+  // ---- Agentic loop ----
+  queueJobs(st, items, log) {
+    let seq = st.seq;
+    let sugs = st.suggestions.slice();
+    let appts = st.appts;
+    const ids = [];
+    const active = (s) => s.status === 'GENERATING' || s.status === 'STREAMING' || s.status === 'PENDING';
+    items.forEach((it) => {
+      const dup = sugs.find((s) => s.apptId === it.apptId && s.trigger === it.trigger && active(s));
+      if (dup && !it.force) {
+        log = this.addLog(log, 'Skipped ' + it.apptId + ': a pending ' + this.TRIG[it.trigger].label.toLowerCase() + ' suggestion already exists', 'muted');
+        return;
+      }
+      sugs = sugs.map((s) => (s.apptId === it.apptId && active(s) ? { ...s, status: 'SUPERSEDED' } : s));
+      const id = 'SUG-' + String(seq++).padStart(3, '0');
+      sugs.push({ id, apptId: it.apptId, trigger: it.trigger, exclude: it.exclude || [], status: 'GENERATING', slotId: null, reasoning: '', shown: 0, confidence: null, conflict: null, source: null });
+      appts = appts.map((a) => (a.id === it.apptId ? { ...a, status: 'RESCHEDULE_PENDING' } : a));
+      ids.push(id);
+    });
+    return { patch: { suggestions: sugs, appts, seq, log }, ids };
+  }
+
+  run(patch, ids) {
+    this.setState(patch);
+    if (ids.length) setTimeout(() => this.resolveJobs(ids), 1300 + Math.round(Math.random() * 500));
+  }
+
+  resolveJobs(ids) {
+    const st = this.state;
+    const work = { ...st, suggestions: st.suggestions.map((s) => ({ ...s })) };
+    let log = st.log;
+    ids.forEach((id) => {
+      const s = work.suggestions.find((x) => x.id === id);
+      if (!s || s.status !== 'GENERATING') return;
+      const a = work.appts.find((x) => x.id === s.apptId);
+      const r = this.engine(work, a, s.trigger, s.exclude);
+      Object.assign(s, r, { status: r.slotId ? 'STREAMING' : 'NO_OPTION', shown: 0 });
+      if (r.source === 'FALLBACK') log = this.addLog(log, 'LLM call failed for ' + a.id + ', used rule-based fallback', 'warn');
+      const slot = r.slotId ? work.slots.find((x) => x.id === r.slotId) : null;
+      log = this.addLog(log, slot
+        ? s.id + ' created for ' + a.patient + ': ' + slot.id + ' at ' + this.fmt(slot.start) + ' (' + Math.round(r.confidence * 100) + '%)'
+        : 'No open slot for ' + a.patient + ', flagged for staff', slot ? 'ok' : 'warn');
+    });
+    this.setState({ suggestions: work.suggestions, log });
+  }
+
+  setProviderStatus(pid, status) {
+    const st = this.state;
+    const p = st.providers.find((x) => x.id === pid);
+    if (!p || p.status === status) return;
+    const providers = st.providers.map((x) => (x.id === pid ? { ...x, status } : x));
+    let log = this.addLog(st.log, 'PATCH /providers/' + pid + '/status → ' + status, 'info');
+    if (status !== 'OFFLINE') {
+      this.setState({ providers, log });
+      this.toast(p.name + ' is now ' + this.PSTAT[status].label.toLowerCase() + '.', 'ok');
+      return;
+    }
+    const affected = st.appts.filter((a) => a.providerId === pid && a.status === 'CONFIRMED');
+    log = this.addLog(log, affected.length
+      ? 'Agent: ' + affected.length + ' confirmed appointment' + (affected.length > 1 ? 's' : '') + ' affected, generating suggestions'
+      : 'Agent: no confirmed appointments affected', affected.length ? 'agent' : 'muted');
+    const held = st.suggestions.filter((s) => s.status === 'PENDING' || s.status === 'STREAMING');
+    let suggestions = st.suggestions.map((s) => {
+      if (held.indexOf(s) < 0 || !s.slotId) return s;
+      const sl = st.slots.find((x) => x.id === s.slotId);
+      return sl.providerId === pid ? { ...s, conflict: p.name + ' just went offline, so this time is no longer available. Get a new suggestion before calling the patient.' } : s;
+    });
+    const r = this.queueJobs({ ...st, suggestions, providers }, affected.map((a) => ({ apptId: a.id, trigger: 'PROVIDER_OFFLINE' })), log);
+    this.run({ ...r.patch, providers }, r.ids);
+    this.toast(p.name + ' is offline. ' + (r.ids.length ? r.ids.length + ' appointment' + (r.ids.length > 1 ? 's' : '') + ' added to the re-schedule queue.' : 'No appointments needed moving.'), 'ok');
+  }
+
+  cancelSlot(slotId) {
+    const st = this.state;
+    const sl = st.slots.find((s) => s.id === slotId);
+    if (!sl || sl.status === 'CANCELLED') return;
+    const slots = st.slots.map((s) => (s.id === slotId ? { ...s, status: 'CANCELLED' } : s));
+    let log = this.addLog(st.log, 'PATCH /slots/' + slotId + '/status → CANCELLED', 'info');
+    const suggestions = st.suggestions.map((s) => (s.slotId === slotId && (s.status === 'PENDING' || s.status === 'STREAMING') ? { ...s, conflict: 'This slot was just cancelled. Get a new suggestion before calling the patient.' } : s));
+    const a = st.appts.find((x) => x.slotId === slotId && (x.status === 'CONFIRMED' || x.status === 'RESCHEDULE_PENDING'));
+    if (!a) {
+      this.setState({ slots, suggestions, log: this.addLog(log, 'Agent: slot was empty, nothing to re-schedule', 'muted') });
+      this.toast(slotId + ' cancelled. No patient was booked in it.', 'ok');
+      return;
+    }
+    log = this.addLog(log, 'Agent: ' + a.patient + ' affected, generating suggestion', 'agent');
+    const r = this.queueJobs({ ...st, slots, suggestions }, [{ apptId: a.id, trigger: 'SLOT_CANCELLED' }], log);
+    this.run({ ...r.patch, slots }, r.ids);
+    this.toast(slotId + ' cancelled. ' + a.patient + ' added to the re-schedule queue.', 'ok');
+  }
+
+  manual(apptId) {
+    const st = this.state;
+    const a = st.appts.find((x) => x.id === apptId);
+    const log = this.addLog(st.log, 'POST /appointments/' + apptId + '/suggest (manual)', 'info');
+    const r = this.queueJobs(st, [{ apptId, trigger: 'INITIAL' }], log);
+    this.run(r.patch, r.ids);
+    if (r.ids.length) this.toast('Finding a new time for ' + a.patient + '. It is in the re-schedule queue.', 'ok');
+  }
+
+  another(apptId) {
+    const st = this.state;
+    const mine = st.suggestions.filter((s) => s.apptId === apptId);
+    const last = mine[mine.length - 1];
+    const exclude = mine.map((s) => s.slotId).filter(Boolean);
+    const log = this.addLog(st.log, 'POST /appointments/' + apptId + '/suggest (excluding ' + (exclude.length ? exclude.join(', ') : 'none') + ')', 'info');
+    const r = this.queueJobs(st, [{ apptId, trigger: last ? last.trigger : 'INITIAL', exclude, force: true }], log);
+    this.run(r.patch, r.ids);
+  }
+
+  accept(id) {
+    const st = this.state;
+    const s = st.suggestions.find((x) => x.id === id);
+    if (!s || s.status !== 'PENDING' || s.conflict) return;
+    const a = st.appts.find((x) => x.id === s.apptId);
+    const ns = st.slots.find((x) => x.id === s.slotId);
+    const np = st.providers.find((p) => p.id === ns.providerId);
+    if (ns.status !== 'OPEN' || np.status === 'OFFLINE') {
+      this.setState({
+        suggestions: st.suggestions.map((x) => (x.id === id ? { ...x, conflict: np.name + '’s ' + this.fmt(ns.start) + ' slot is no longer free. Nothing was changed.' } : x)),
+        log: this.addLog(st.log, 'PATCH /suggestions/' + id + ' → 409 Conflict: ' + ns.id + ' not OPEN, rolled back', 'error')
+      });
+      this.toast('Couldn’t rebook: that slot was just taken. Nothing was changed.', 'error');
+      return;
+    }
+    const oldId = a.slotId;
+    const slots = st.slots.map((x) => (x.id === ns.id ? { ...x, status: 'BOOKED' } : (x.id === oldId && x.status === 'BOOKED' ? { ...x, status: 'OPEN' } : x)));
+    const appts = st.appts.map((x) => (x.id === a.id ? { ...x, slotId: ns.id, providerId: np.id, status: 'RESCHEDULED', fromSlot: oldId } : x));
+    const suggestions = st.suggestions.map((x) => {
+      if (x.id === id) return { ...x, status: 'ACCEPTED' };
+      if (x.slotId === ns.id && (x.status === 'PENDING' || x.status === 'STREAMING')) {
+        return { ...x, conflict: np.name + '’s ' + this.fmt(ns.start) + ' slot was just booked for ' + a.patient + '. Get a new suggestion before calling this patient.' };
+      }
+      return x;
+    });
+    this.setState({ slots, appts, suggestions, log: this.addLog(st.log, 'PATCH /suggestions/' + id + ' → ACCEPTED: ' + a.id + ' moved, ' + oldId + ' freed, ' + ns.id + ' booked in one transaction', 'ok') });
+    this.toast(a.patient + ' is rebooked for ' + this.fmt(ns.start) + ' with ' + np.name + '.', 'ok');
+  }
+
+  reject(id) {
+    const st = this.state;
+    const s = st.suggestions.find((x) => x.id === id);
+    if (!s) return;
+    this.setState({
+      suggestions: st.suggestions.map((x) => (x.id === id ? { ...x, status: 'REJECTED' } : x)),
+      log: this.addLog(st.log, 'PATCH /suggestions/' + id + ' → REJECTED', 'muted')
+    });
+  }
+
+  toWaitlist(apptId) {
+    const st = this.state;
+    const a = st.appts.find((x) => x.id === apptId);
+    const p = st.providers.find((x) => x.id === a.providerId);
+    if (st.waitlist.some((w) => w.id === 'W-' + apptId)) { this.toast(a.patient + ' is already on the waitlist.', 'ok'); return; }
+    this.setState({
+      waitlist: st.waitlist.concat([{ id: 'W-' + apptId, patient: a.patient, type: a.type, specialty: p.specialty, pref: 'ANY', waiting: 'Just now', offered: false }]),
+      log: this.addLog(st.log, a.patient + ' added to waitlist', 'info')
+    });
+    this.toast(a.patient + ' added to the waitlist.', 'ok');
+  }
+
+  book(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state, f = st.form;
+    if (!f.name.trim()) { this.setState({ form: { ...f, error: 'Enter the patient’s name.' } }); return; }
+    if (!f.slotId) { this.setState({ form: { ...f, error: 'Pick an open slot.' } }); return; }
+    const sl = st.slots.find((s) => s.id === f.slotId);
+    if (!sl || sl.status !== 'OPEN') { this.setState({ form: { ...f, slotId: '', error: 'That slot was just taken. Pick another.' } }); return; }
+    const id = 'APT-' + String(st.apptSeq).padStart(3, '0');
+    this.setState({
+      apptSeq: st.apptSeq + 1,
+      appts: st.appts.concat([{ id, patient: f.name.trim(), type: f.type, providerId: sl.providerId, slotId: sl.id, status: 'CONFIRMED' }]),
+      slots: st.slots.map((s) => (s.id === sl.id ? { ...s, status: 'BOOKED' } : s)),
+      form: { name: '', type: 'ROUTINE', providerId: f.providerId, slotId: '', error: '' },
+      showForm: false,
+      log: this.addLog(st.log, 'POST /appointments → ' + id + ' booked on ' + sl.id, 'ok')
+    });
+    this.toast(f.name.trim() + ' booked for ' + this.fmt(sl.start) + '.', 'ok');
+  }
+
+  renderVals() {
+    const st = this.state;
+    const accent = this.props.accent ?? '#1D4ED8';
+    const pollErr = !!(this.props.showPollingError ?? false);
+    const prov = (id) => st.providers.find((p) => p.id === id);
+    const slotOf = (id) => st.slots.find((s) => s.id === id);
+    const latest = {};
+    st.suggestions.forEach((s) => { if (s.status !== 'SUPERSEDED') latest[s.apptId] = s; });
+    const heldBy = {};
+    st.suggestions.forEach((s) => { if (s.slotId && (s.status === 'PENDING' || s.status === 'STREAMING')) heldBy[s.slotId] = s; });
+
+    // ---- Queue ----
+    const pending = st.appts.filter((a) => a.status === 'RESCHEDULE_PENDING');
+    const rank = { URGENT: 0, FOLLOW_UP: 1, ROUTINE: 2 };
+    const cardsAll = pending.map((a) => {
+      const s = latest[a.id];
+      const T = this.TYPE[a.type];
+      const trig = s ? s.trigger : 'INITIAL';
+      const G = this.TRIG[trig];
+      const os = slotOf(a.slotId), op = prov(a.providerId);
+      const ns = s && s.slotId ? slotOf(s.slotId) : null;
+      const np = ns ? prov(ns.providerId) : null;
+      const status = s ? s.status : 'REJECTED';
+      const conf = s && s.confidence != null ? Math.round(s.confidence * 100) : 0;
+      const isRuleish = s && (s.source === 'RULE' || s.source === 'FALLBACK');
+      const ready = status === 'STREAMING' || status === 'PENDING';
+      const conflict = !!(s && s.conflict);
+      const confColor = conf >= 80 ? accent : (conf >= 65 ? '#B54708' : '#B42318');
+      const sourceLabel = !s || status === 'GENERATING' ? (st.strategy === 'AI' ? 'AI advisor' : 'Rule-based') :
+        (s.source === 'AI' ? 'AI advisor' : (s.source === 'FALLBACK' ? 'Rule-based fallback · AI unavailable' : 'Rule-based'));
+      return {
+        sortKey: rank[a.type] * 10000 + os.start,
+        trigger: trig,
+        apptId: a.id, patient: a.patient,
+        typeLabel: T.label, typeFg: T.fg, typeBg: T.bg,
+        trigLabel: G.label, trigFg: G.fg, trigBg: G.bg,
+        origTime: this.fmt(os.start), origProv: op.name,
+        sugTime: ns ? this.fmt(ns.start) : '', sugDur: ns ? ns.dur + ' min' : '', sugProv: np ? np.name : '',
+        isAlt: !!(np && np.id !== a.providerId),
+        toBg: conflict ? '#FEF3F2' : '#F5F8FF', toBorder: conflict ? '#FECDCA' : '#C9D7FB',
+        confPct: conf + '%', confColor,
+        confTitle: isRuleish ? 'Rule score' : 'Confidence',
+        confLabel: conf >= 80 ? 'High' : (conf >= 65 ? 'Medium' : 'Low'),
+        readLabel: isRuleish ? 'Template text · rephrase for the patient' : 'Read to patient',
+        reasoning: s ? (status === 'STREAMING' ? s.reasoning.slice(0, s.shown) : s.reasoning) : '',
+        generatingText: st.strategy === 'AI' && !this.props.simulateLlmFailure ? 'AI advisor is checking open slots and the provider roster…' : 'Finding the nearest matching open slot…',
+        isGenerating: status === 'GENERATING', isStreaming: status === 'STREAMING', isReady: ready,
+        isNoOption: status === 'NO_OPTION', isRejected: status === 'REJECTED',
+        rejectedText: 'You rejected ' + (ns ? this.fmt(ns.start) + ' with ' + np.name : 'the last suggestion') + '. The patient keeps their place in this queue.',
+        hasConflict: conflict, conflictText: s && s.conflict ? s.conflict : '',
+        cardBorder: conflict ? '#FDA29B' : (status === 'GENERATING' ? '#C9D7FB' : '#E3E6EB'),
+        sourceLabel, sourceFg: s && s.source === 'FALLBACK' ? '#B54708' : (s && s.source === 'RULE' ? '#475467' : accent),
+        isAISource: !s || s.source === 'AI' || (status === 'GENERATING' && st.strategy === 'AI'),
+        isFallback: !!(s && s.source === 'FALLBACK'),
+        acceptDisabled: status !== 'PENDING' || conflict, acceptOpacity: status !== 'PENDING' || conflict ? 0.45 : 1,
+        rejectDisabled: status !== 'PENDING', rejectOpacity: status !== 'PENDING' ? 0.45 : 1,
+        anotherDisabled: status === 'STREAMING', anotherOpacity: status === 'STREAMING' ? 0.45 : 1,
+        accept: () => this.accept(s.id), reject: () => this.reject(s.id),
+        another: () => this.another(a.id), waitlist: () => this.toWaitlist(a.id)
+      };
+    }).sort((x, y) => x.sortKey - y.sortKey);
+    const queue = st.filter === 'ALL' ? cardsAll : cardsAll.filter((c) => c.trigger === st.filter);
+    const fdefs = [['ALL', 'All'], ['PROVIDER_OFFLINE', 'Provider offline'], ['SLOT_CANCELLED', 'Slot cancelled'], ['INITIAL', 'Manual']];
+    const filters = fdefs.map(([id, label]) => {
+      const on = st.filter === id;
+      const count = id === 'ALL' ? cardsAll.length : cardsAll.filter((c) => c.trigger === id).length;
+      return { label, count, on, bg: on ? '#101828' : '#FFFFFF', fg: on ? '#FFFFFF' : '#344054', border: on ? '#101828' : '#D0D5DD', go: () => this.setState({ filter: id }) };
+    });
+    const history = st.suggestions.filter((s) => s.status === 'ACCEPTED' || s.status === 'REJECTED').slice().reverse().slice(0, 8).map((s) => {
+      const a = st.appts.find((x) => x.id === s.apptId);
+      const ns = slotOf(s.slotId), np = ns ? prov(ns.providerId) : null;
+      const G = this.TRIG[s.trigger];
+      const ok = s.status === 'ACCEPTED';
+      return {
+        patient: a.patient, status: ok ? 'Accepted' : 'Rejected',
+        bg: ok ? '#E5F5EC' : '#F2F4F7', fg: ok ? '#067647' : '#475467',
+        text: ok ? 'Moved to ' + this.fmt(ns.start) + ' with ' + np.name : 'Declined ' + (ns ? this.fmt(ns.start) + ' with ' + np.name : 'suggestion'),
+        trigLabel: G.label, trigBg: G.bg, trigFg: G.fg
+      };
+    });
+    const strategyNote = st.strategy === 'AI'
+      ? (this.props.simulateLlmFailure
+        ? 'AI advisor is selected, but the model isn’t responding. New suggestions use the rule-based strategy until it recovers.'
+        : 'AI advisor picks times based on urgency, keeping the same doctor where possible, and writes an explanation you can read to the patient. If the model fails, the rule-based strategy takes over.')
+      : 'Rule-based: the same provider’s nearest open slot first, otherwise the nearest slot with a matching specialty.';
+
+    const railProviders = st.providers.map((p) => {
+      const S = this.PSTAT[p.status];
+      const n = st.appts.filter((a) => a.providerId === p.id && (a.status === 'CONFIRMED' || a.status === 'RESCHEDULED')).length;
+      const off = p.status === 'OFFLINE';
+      return {
+        name: p.name, spec: this.SPEC[p.specialty].label, count: n + (n === 1 ? ' appt' : ' appts'),
+        statusLabel: S.label, fg: S.fg, dot: S.dot, initials: this.initials(p.name),
+        avatarBg: off ? '#F2F4F7' : '#EAF0FD', avatarFg: off ? '#475467' : '#1D4ED8',
+        toggleLabel: off ? 'Back online' : 'Mark offline', toggleFg: off ? '#067647' : '#B54708',
+        toggleAria: (off ? 'Mark ' + p.name + ' available' : 'Mark ' + p.name + ' offline'),
+        toggle: () => this.setProviderStatus(p.id, off ? 'AVAILABLE' : 'OFFLINE')
+      };
+    });
+    const logDot = { info: '#2E6BF0', ok: '#12B76A', warn: '#F79009', error: '#F04438', muted: '#98A2B3', agent: '#7A5AF8' };
+    const log = st.log.map((l) => ({ t: l.t, text: l.text, dot: logDot[l.kind] || '#98A2B3' }));
+
+    // ---- Day view ----
+    const pct = (m) => ((m - 540) / 480 * 100) + '%';
+    const hours = [];
+    for (let h = 9; h <= 17; h++) hours.push({ left: pct(h * 60), label: ((h % 12) || 12) + (h >= 12 ? 'p' : 'a') });
+    const dayRows = st.providers.map((p) => {
+      const S = this.PSTAT[p.status];
+      const off = p.status === 'OFFLINE';
+      const slots = st.slots.filter((s) => s.providerId === p.id).map((s) => {
+        const a = st.appts.find((x) => x.slotId === s.id && x.status !== 'RESCHEDULED') || st.appts.find((x) => x.slotId === s.id);
+        let bg, fg, bd, label, deco = 'none';
+        if (s.status === 'CANCELLED') {
+          bg = 'repeating-linear-gradient(135deg,#F2F4F7 0 6px,#E4E7EC 6px 8px)'; fg = '#475467'; bd = '1px solid #D0D5DD'; label = 'Cancelled'; deco = 'line-through';
+        } else if (s.status === 'OPEN') {
+          if (heldBy[s.id]) { bg = '#FFFAEB'; fg = '#93370D'; bd = '1px dashed #DC6803'; label = 'Held'; }
+          else if (off) { bg = '#F9FAFB'; fg = '#475467'; bd = '1px dashed #D0D5DD'; label = 'Unavailable'; }
+          else { bg = '#FFFFFF'; fg = '#067647'; bd = '1px dashed #47CD89'; label = 'Open'; }
+        } else if (a) {
+          const T = this.TYPE[a.type];
+          const short = a.patient.split(' ')[0] + ' ' + (a.patient.split(' ')[1] || '').charAt(0) + '.';
+          if (a.status === 'COMPLETED') { bg = '#F2F4F7'; fg = '#475467'; bd = '1px solid #E4E7EC'; }
+          else if (a.status === 'RESCHEDULE_PENDING') { bg = '#FEF0E1'; fg = '#93370D'; bd = '1px dashed #DC6803'; }
+          else { bg = T.bg; fg = T.fg; bd = '1px solid ' + T.fg + '55'; }
+          label = short;
+        } else { bg = '#F2F4F7'; fg = '#475467'; bd = '1px solid #E4E7EC'; label = 'Booked'; }
+        const selected = st.selectedSlot === s.id;
+        return {
+          left: pct(s.start), width: 'calc(' + (s.dur / 480 * 100) + '% - 3px)', bg, fg, bd, label, deco,
+          time: this.fmt(s.start).replace(' AM', '').replace(' PM', ''),
+          ring: selected ? '0 0 0 2px #FFFFFF, 0 0 0 4px ' + accent : 'none', selected,
+          aria: this.fmt(s.start) + ', ' + p.name + ', ' + label,
+          select: () => this.setState({ selectedSlot: selected ? null : s.id })
+        };
+      });
+      return { name: p.name, spec: this.SPEC[p.specialty].label, statusLabel: S.label, fg: S.fg, dot: S.dot, rowBg: off ? '#FCFCFD' : '#FFFFFF', slots };
+    });
+    const legend = [
+      { label: 'Routine', bg: '#EAF0FD', bd: '1px solid #1D4ED855' },
+      { label: 'Follow-up', bg: '#E3F4EF', bd: '1px solid #0B6E5A55' },
+      { label: 'Urgent', bg: '#FDECEB', bd: '1px solid #B4231855' },
+      { label: 'Being moved', bg: '#FEF0E1', bd: '1px dashed #DC6803' },
+      { label: 'Open', bg: '#FFFFFF', bd: '1px dashed #47CD89' },
+      { label: 'Held for a suggestion', bg: '#FFFAEB', bd: '1px dashed #DC6803' },
+      { label: 'Cancelled', bg: 'repeating-linear-gradient(135deg,#F2F4F7 0 4px,#E4E7EC 4px 6px)', bd: '1px solid #D0D5DD' }
+    ];
+    let sel = null;
+    if (st.selectedSlot) {
+      const s = slotOf(st.selectedSlot);
+      const p = prov(s.providerId);
+      const a = st.appts.find((x) => x.slotId === s.id && x.status !== 'RESCHEDULED' && x.status !== 'COMPLETED');
+      const done = st.appts.find((x) => x.slotId === s.id && x.status === 'COMPLETED');
+      const stMap = { OPEN: ['Open', '#067647', '#E5F5EC'], BOOKED: ['Booked', '#1D4ED8', '#EAF0FD'], CANCELLED: ['Cancelled', '#475467', '#F2F4F7'] };
+      const m = stMap[s.status];
+      sel = {
+        id: s.id, statusLabel: m[0], stFg: m[1], stBg: m[2],
+        range: this.fmt(s.start) + ' – ' + this.fmt(s.start + s.dur), provider: p.name,
+        who: a ? a.patient + ' · ' + this.TYPE[a.type].label + ' · ' + this.ASTAT[a.status].label
+          : (done ? done.patient + ' · Completed' : (heldBy[s.id] ? 'Held by a pending suggestion' : 'No patient booked')),
+        canCancel: s.status !== 'CANCELLED' && s.start > this.NOW,
+        canSuggest: !!(a && a.status === 'CONFIRMED'),
+        cancel: () => this.cancelSlot(s.id),
+        suggest: () => { this.manual(a.id); this.setState({ tab: 'queue' }); },
+        close: () => this.setState({ selectedSlot: null })
+      };
+    }
+
+    // ---- Appointments ----
+    const adefs = [['ALL', 'All'], ['CONFIRMED', 'Confirmed'], ['RESCHEDULE_PENDING', 'Reschedule pending'], ['RESCHEDULED', 'Rescheduled'], ['COMPLETED', 'Completed']];
+    const apptFilters = adefs.map(([id, label]) => {
+      const on = st.apptFilter === id;
+      const count = id === 'ALL' ? st.appts.length : st.appts.filter((a) => a.status === id).length;
+      return { label, count, on, bg: on ? '#101828' : '#FFFFFF', fg: on ? '#FFFFFF' : '#344054', border: on ? '#101828' : '#D0D5DD', go: () => this.setState({ apptFilter: id }) };
+    });
+    const apptRows = st.appts
+      .filter((a) => st.apptFilter === 'ALL' || a.status === st.apptFilter)
+      .slice().sort((x, y) => slotOf(x.slotId).start - slotOf(y.slotId).start)
+      .map((a) => {
+        const T = this.TYPE[a.type], A = this.ASTAT[a.status];
+        return {
+          id: a.id, patient: a.patient, typeLabel: T.label, typeFg: T.fg, typeBg: T.bg,
+          provider: prov(a.providerId).name, time: this.fmt(slotOf(a.slotId).start),
+          statusLabel: A.label, stFg: A.fg, stBg: A.bg,
+          canSuggest: a.status === 'CONFIRMED', isPending: a.status === 'RESCHEDULE_PENDING',
+          suggest: () => this.manual(a.id), open: () => this.setState({ tab: 'queue', filter: 'ALL' })
+        };
+      });
+    const f = st.form;
+    const pickStyle = (on) => ({ bg: on ? '#EAF0FD' : '#FFFFFF', fg: on ? '#1D4ED8' : '#344054', border: on ? '#1D4ED8' : '#D0D5DD' });
+    const formTypes = Object.keys(this.TYPE).map((k) => ({ label: this.TYPE[k].label, on: f.type === k, ...pickStyle(f.type === k), pick: () => this.setState({ form: { ...f, type: k } }) }));
+    const formProviders = st.providers.map((p) => {
+      const off = p.status === 'OFFLINE';
+      return { label: p.name + (off ? ' (offline)' : ''), on: f.providerId === p.id, off, opacity: off ? 0.5 : 1, ...pickStyle(f.providerId === p.id), pick: () => this.setState({ form: { ...f, providerId: p.id, slotId: '' } }) };
+    });
+    const fp = prov(f.providerId);
+    const formSlots = st.slots
+      .filter((s) => s.providerId === f.providerId && s.status === 'OPEN' && s.start > this.NOW && fp.status !== 'OFFLINE')
+      .sort((x, y) => x.start - y.start)
+      .map((s) => ({ label: this.fmt(s.start) + ' · ' + s.dur + 'm', on: f.slotId === s.id, ...pickStyle(f.slotId === s.id), pick: () => this.setState({ form: { ...f, slotId: s.id, error: '' } }) }));
+
+    // ---- Providers ----
+    const providerCards = st.providers.map((p) => {
+      const mine = st.slots.filter((s) => s.providerId === p.id);
+      const bookedMin = mine.filter((s) => s.status === 'BOOKED').reduce((n, s) => n + s.dur, 0);
+      const load = Math.round(bookedMin / 480 * 100);
+      const upcoming = mine.filter((s) => s.start > this.NOW).sort((x, y) => x.start - y.start).slice(0, 4).map((s) => {
+        const a = st.appts.find((x) => x.slotId === s.id && x.status !== 'COMPLETED');
+        const tag = s.status === 'CANCELLED' ? ['Cancelled', '#475467', '#F2F4F7'] : (a ? [this.ASTAT[a.status].label, this.ASTAT[a.status].fg, this.ASTAT[a.status].bg] : ['Open', '#067647', '#E5F5EC']);
+        return { time: this.fmt(s.start), label: a ? a.patient : 'Open slot', tag: tag[0], fg: tag[1], bg: tag[2] };
+      });
+      const S = this.PSTAT[p.status];
+      const off = p.status === 'OFFLINE';
+      return {
+        id: p.id, name: p.name, spec: this.SPEC[p.specialty].label, initials: this.initials(p.name),
+        avatarBg: off ? '#F2F4F7' : '#EAF0FD', avatarFg: off ? '#475467' : '#1D4ED8',
+        loadPct: load + '%', loadText: this.dur(bookedMin) + ' booked',
+        loadColor: load >= 50 ? '#B54708' : accent,
+        upcoming,
+        statuses: ['AVAILABLE', 'BUSY', 'OFFLINE'].map((k) => {
+          const on = p.status === k;
+          return { label: this.PSTAT[k].label, on, bg: on ? '#FFFFFF' : 'transparent', fg: on ? this.PSTAT[k].fg : '#475467', shadow: on ? '0 1px 2px rgba(16,24,40,0.12)' : 'none', pick: () => this.setProviderStatus(p.id, k) };
+        })
+      };
+    });
+
+    // ---- Waitlist ----
+    const prefLabel = { MORNING: 'Mornings', AFTERNOON: 'Afternoons', ANY: 'Any time' };
+    const waitRows = st.waitlist.map((w) => {
+      const T = this.TYPE[w.type];
+      const m = st.slots.filter((s) => {
+        const p = prov(s.providerId);
+        if (s.status !== 'OPEN' || s.start <= this.NOW || p.status === 'OFFLINE' || p.specialty !== w.specialty || heldBy[s.id]) return false;
+        if (w.pref === 'MORNING') return s.start < 720;
+        if (w.pref === 'AFTERNOON') return s.start >= 720;
+        return true;
+      }).sort((x, y) => x.start - y.start)[0];
+      return {
+        patient: w.patient, typeLabel: T.label, typeFg: T.fg, typeBg: T.bg,
+        spec: this.SPEC[w.specialty].label, pref: prefLabel[w.pref], waiting: w.waiting,
+        hasMatch: !!m, noMatch: !m, offered: w.offered, offerOpacity: w.offered ? 0.55 : 1,
+        offerLabel: m ? (w.offered ? 'Offer sent' : 'Offer ' + this.fmt(m.start) + ' · ' + prov(m.providerId).name.replace('Dr. ', 'Dr. ').split(' ').slice(0, 1).concat(prov(m.providerId).name.split(' ').slice(-1)).join(' ')) : '',
+        offer: () => {
+          this.setState({ waitlist: this.state.waitlist.map((x) => (x.id === w.id ? { ...x, offered: true } : x)), log: this.addLog(this.state.log, 'Waitlist offer recorded for ' + w.patient + ' (' + m.id + ')', 'info') });
+          this.toast('Offer recorded for ' + w.patient + '. Messages go out once sprint 3 notifications ship.', 'ok');
+        }
+      };
+    });
+
+    // ---- Chrome ----
+    const tabDefs = [['queue', 'Re-schedule queue', cardsAll.length], ['day', 'Day view', null], ['appts', 'Appointments', st.appts.length], ['providers', 'Providers', null], ['waitlist', 'Waitlist', st.waitlist.length]];
+    const tabs = tabDefs.map(([id, label, count]) => {
+      const on = st.tab === id;
+      const hot = id === 'queue' && count > 0;
+      return {
+        label, count: count == null ? '' : count, hasCount: count != null, current: on,
+        color: on ? accent : '#475467', border: on ? accent : 'transparent', weight: on ? 600 : 500,
+        countBg: hot ? '#FEF0E1' : '#EEF0F3', countFg: hot ? '#B54708' : '#475467',
+        go: () => this.setState({ tab: id })
+      };
+    });
+    const isAI = st.strategy === 'AI';
+    const loaded = st.loaded;
+    const toastKind = st.toast ? st.toast.kind : 'ok';
+    const queueEmpty = cardsAll.length === 0 || queue.length === 0;
+    const chen = prov('PRV-001');
+
+    return {
+      accent, nowLabel: this.fmt(this.nowMin()), pollAgo: st.pollAgo,
+      pollOk: !pollErr, pollErr,
+      retry: () => this.toast('Still can’t reach the server. Retrying in 5 seconds.', 'error'),
+      isAI, isRule: !isAI,
+      aiBg: isAI ? '#FFFFFF' : 'transparent', aiFg: isAI ? accent : '#475467', aiShadow: isAI ? '0 1px 2px rgba(16,24,40,0.12)' : 'none',
+      ruleBg: !isAI ? '#FFFFFF' : 'transparent', ruleFg: !isAI ? '#101828' : '#475467', ruleShadow: !isAI ? '0 1px 2px rgba(16,24,40,0.12)' : 'none',
+      setAI: () => { if (!isAI) this.setState({ strategy: 'AI', log: this.addLog(st.log, 'Strategy switched to AI advisor (applies to new suggestions)', 'info') }); },
+      setRule: () => { if (isAI) this.setState({ strategy: 'RULE', log: this.addLog(st.log, 'Strategy switched to rule-based (applies to new suggestions)', 'info') }); },
+      tabs,
+      notLoaded: !loaded,
+      onQueue: loaded && st.tab === 'queue', onDay: loaded && st.tab === 'day', onAppts: loaded && st.tab === 'appts',
+      onProviders: loaded && st.tab === 'providers', onWaitlist: loaded && st.tab === 'waitlist',
+      filters, queue, queueEmpty,
+      emptyTitle: cardsAll.length === 0 ? 'Nothing needs a new time right now' : 'No appointments match this filter',
+      canDemo: cardsAll.length === 0 && chen.status !== 'OFFLINE',
+      demoOffline: () => this.setProviderStatus('PRV-001', 'OFFLINE'),
+      strategyNote, history, hasHistory: history.length > 0,
+      railProviders, log,
+      hours, dayRows, legend, sel: sel || {}, hasSel: !!sel, noSel: !sel,
+      apptFilters, apptRows, noApptRows: apptRows.length === 0,
+      showForm: st.showForm, formBtnLabel: st.showForm ? 'Close form' : 'New appointment',
+      toggleForm: () => this.setState({ showForm: !st.showForm, form: { ...f, error: '' } }),
+      form: f, hasFormError: !!f.error,
+      onName: (e) => this.setState({ form: { ...this.state.form, name: e.target.value, error: '' } }),
+      formTypes, formProviders, formSlots, noFormSlots: formSlots.length === 0,
+      book: (e) => this.book(e),
+      providerCards, waitRows,
+      hasToast: !!st.toast, toastText: st.toast ? st.toast.text : '',
+      toastBg: toastKind === 'error' ? '#912018' : '#101828', toastDot: toastKind === 'error' ? '#FDA29B' : '#47CD89'
+    };
+  }
+}
+</script>
+</body>
+</html>

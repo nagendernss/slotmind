@@ -1,0 +1,23 @@
+# secrets
+application-local.properties
+.env
+.env.*
+
+# java
+backend/target/
+*.class
+*.log
+
+# node
+frontend/node_modules/
+frontend/dist/
+
+# ide / os
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# hackathon brief (organiser material)
+slotmind-brief*.html
