@@ -55,13 +55,16 @@ export const specOf = (k?: string | null) => (k && (SPEC as Record<string, strin
 /** Parse an ISO local datetime ("2026-10-20T11:00:00") without timezone shifting. */
 export function parseLocal(iso?: string | number[] | null): Date | null {
   if (!iso) return null;
-  if (Array.isArray(iso)) { // Jackson timestamp-array fallback [y,m,d,h,min,s]
-    const [y, mo, d, h = 0, mi = 0, se = 0] = iso;
-    return new Date(y, mo - 1, d, h, mi, se);
+  if (Array.isArray(iso)) { // Jackson timestamp-array fallback [y,m,d,h,min,s,nanos]
+    const [y, mo, d, h = 0, mi = 0, se = 0, nanos = 0] = iso;
+    return new Date(y, mo - 1, d, h, mi, se, Math.floor(nanos / 1e6));
   }
-  const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(iso);
+  // Keep milliseconds: LocalDateTime is serialised with microseconds, and suggestions created in the
+  // same second must still order correctly.
+  const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?/.exec(iso);
   if (m && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(iso)) {
-    return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+    const ms = m[7] ? +m[7].padEnd(3, '0').slice(0, 3) : 0;
+    return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0), ms);
   }
   const d = new Date(iso);
   return isNaN(d.getTime()) ? null : d;
