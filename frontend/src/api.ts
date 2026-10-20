@@ -5,6 +5,8 @@ import type {
 } from './types';
 
 const BASE = '/api';
+/** Path segments come from the URL hash (portal) or server data: always encode them. */
+const enc = encodeURIComponent;
 
 export class ApiError extends Error {
   status: number;
@@ -53,20 +55,20 @@ export const api = {
   // Appointments
   bookAppointment: (b: BookRequest) => request<AppointmentView>('POST', '/appointments', b),
   listAppointments: (status?: AppointmentStatus) => request<AppointmentView[]>('GET', '/appointments' + q({ status })),
-  getAppointment: (id: string) => request<AppointmentView>('GET', `/appointments/${id}`),
-  completeAppointment: (id: string) => request<AppointmentView>('PATCH', `/appointments/${id}/complete`),
-  suggest: (id: string, strategy?: Strategy) => request<SuggestionView>('POST', `/appointments/${id}/suggest` + q({ strategy })),
+  getAppointment: (id: string) => request<AppointmentView>('GET', `/appointments/${enc(id)}`),
+  completeAppointment: (id: string) => request<AppointmentView>('PATCH', `/appointments/${enc(id)}/complete`),
+  suggest: (id: string, strategy?: Strategy) => request<SuggestionView>('POST', `/appointments/${enc(id)}/suggest` + q({ strategy })),
 
   // Suggestions
   listSuggestions: (status?: SuggestionStatus) => request<SuggestionView[]>('GET', '/suggestions' + q({ status })),
   resolveSuggestion: (id: string, status: 'ACCEPTED' | 'REJECTED', actor: 'STAFF' | 'PATIENT' = 'STAFF') =>
-    request<SuggestionView>('PATCH', `/suggestions/${id}`, { status, actor }),
+    request<SuggestionView>('PATCH', `/suggestions/${enc(id)}`, { status, actor }),
 
   // Providers & slots
   listProviders: () => request<ProviderView[]>('GET', '/providers'),
-  setProviderStatus: (id: string, status: ProviderStatus) => request<ProviderView>('PATCH', `/providers/${id}/status`, { status }),
+  setProviderStatus: (id: string, status: ProviderStatus) => request<ProviderView>('PATCH', `/providers/${enc(id)}/status`, { status }),
   listSlots: (providerId?: string, status?: SlotStatus) => request<SlotView[]>('GET', '/slots' + q({ providerId, status })),
-  setSlotStatus: (id: string, status: SlotStatus) => request<SlotView>('PATCH', `/slots/${id}/status`, { status }),
+  setSlotStatus: (id: string, status: SlotStatus) => request<SlotView>('PATCH', `/slots/${enc(id)}/status`, { status }),
   schedule: () => request<ScheduleView>('GET', '/schedule'),
 
   // Config
@@ -82,18 +84,18 @@ export const api = {
   // Waitlist
   listWaitlist: () => request<WaitlistView[]>('GET', '/waitlist'),
   addWaitlist: (b: WaitlistRequest) => request<WaitlistView>('POST', '/waitlist', b),
-  acceptWaitlist: (id: string) => request<unknown>('POST', `/waitlist/${id}/accept`),
-  declineWaitlist: (id: string) => request<unknown>('POST', `/waitlist/${id}/decline`),
+  acceptWaitlist: (id: string) => request<unknown>('POST', `/waitlist/${enc(id)}/accept`),
+  declineWaitlist: (id: string) => request<unknown>('POST', `/waitlist/${enc(id)}/decline`),
 
   notifications: () => request<NotificationView[]>('GET', '/notifications'),
   activity: () => request<ActivityView[]>('GET', '/activity'),
 
   // Portal
   portal: async (id: string): Promise<PortalView> => {
-    const raw = await request<Record<string, unknown>>('GET', `/portal/appointments/${id}`);
+    const raw = await request<Record<string, unknown>>('GET', `/portal/appointments/${enc(id)}`);
     return normalizePortal(raw);
   },
-  portalReschedule: (id: string) => request<unknown>('POST', `/portal/appointments/${id}/reschedule`),
+  portalReschedule: (id: string) => request<unknown>('POST', `/portal/appointments/${enc(id)}/reschedule`),
 };
 
 /** Accepts a few plausible shapes for the portal view (contract only says "appointment + open suggestions"). */
@@ -117,7 +119,7 @@ export interface StreamHandlers {
 
 /** Parses text/event-stream from a fetch body. Resolves with the final suggestion. */
 export async function suggestStream(id: string, h: StreamHandlers, signal?: AbortSignal): Promise<SuggestionView> {
-  const res = await fetch(`${BASE}/appointments/${id}/suggest/stream`, {
+  const res = await fetch(`${BASE}/appointments/${enc(id)}/suggest/stream`, {
     method: 'POST',
     headers: { Accept: 'text/event-stream' },
     signal,
@@ -146,37 +148,55 @@ export async function suggestStream(id: string, h: StreamHandlers, signal?: Abor
     }
   };
 
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (value) buf += decoder.decode(value, { stream: true });
-    buf = buf.replace(/\r\n/g, '\n');
-    let idx: number;
-    while ((idx = buf.indexOf('\n\n')) >= 0) {
-      const block = buf.slice(0, idx);
-      buf = buf.slice(idx + 2);
-      let event = 'message';
-      const dataLines: string[] = [];
-      for (const line of block.split('\n')) {
-        if (line.startsWith(':')) continue;
-        if (line.startsWith('event:')) event = line.slice(6).trim();
-        else if (line.startsWith('data:')) dataLines.push(line.slice(5)); // Spring writes "data:" without a pad space, so keep leading spaces of tokens
+  const readEvents = async () => {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (value) buf += decoder.decode(value, { stream: true });
+      // Normalise CRLF and bare CR line endings. A trailing CR may be the first half of a CRLF split
+      // across chunks, so it is only converted once more data (or the end of the stream) arrives.
+      buf = buf.replace(/\r\n/g, '\n').replace(/\r(?!$)/g, '\n');
+      if (done && buf.endsWith('\r')) buf = buf.slice(0, -1) + '\n';
+      let idx: number;
+      while ((idx = buf.indexOf('\n\n')) >= 0) {
+        const block = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+        let event = 'message';
+        const dataLines: string[] = [];
+        for (const line of block.split('\n')) {
+          if (line.startsWith(':')) continue;
+          if (line.startsWith('event:')) event = line.slice(6).trim();
+          else if (line.startsWith('data:')) dataLines.push(line.slice(5)); // Spring writes "data:" without a pad space, so keep leading spaces of tokens
+        }
+        if (dataLines.length) dispatch(event, dataLines.join('\n'));
       }
-      if (dataLines.length) dispatch(event, dataLines.join('\n'));
+      if (done) return;
     }
-    if (done) break;
+  };
+
+  try {
+    await readEvents();
+  } catch (e) {
+    reader.cancel().catch(() => undefined); // don't leave the connection open after an error event
+    throw e;
   }
   if (!final) throw new ApiError(500, 'STREAM_INCOMPLETE', 'Stream ended without a suggestion');
   return final;
 }
 
-/** token data may be raw text or a JSON string / {text}/{token} object. */
+/**
+ * token/status data is raw text (Spring `data(String)`), optionally a {text}/{token} JSON object.
+ * Bare JSON strings are NOT unwrapped: a reasoning word in quotes (`"urgent" `) is valid raw text, and
+ * unwrapping it would drop the quotes and the trailing space.
+ */
 function unwrapToken(data: string): string {
   const t = data.trim();
-  if (t.startsWith('"') || t.startsWith('{')) {
+  if (t.startsWith('{') && t.endsWith('}')) {
     try {
       const v = JSON.parse(t);
-      if (typeof v === 'string') return v;
-      if (v && typeof v === 'object') return v.text ?? v.token ?? v.message ?? v.status ?? data;
+      if (v && typeof v === 'object') {
+        const s = v.text ?? v.token ?? v.message ?? v.status;
+        if (typeof s === 'string') return s;
+      }
     } catch { /* raw */ }
   }
   return data;

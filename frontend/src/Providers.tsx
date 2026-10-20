@@ -57,14 +57,17 @@ export function ProvidersView({ ctx }: { ctx: Ctx }) {
               <ul className="upcoming">
                 {upcoming.length === 0 && <li className="muted">No upcoming slots.</li>}
                 {upcoming.map((s) => {
-                  const a = s.appointment && s.appointment.status !== 'COMPLETED' ? s.appointment : null;
+                  // A slot whose visit is COMPLETED is still BOOKED: show it as completed, never as "Open".
+                  const a = s.status !== 'CANCELLED' ? s.appointment : null;
                   const tag: [string, string, string] = s.status === 'CANCELLED' ? ['Cancelled', '#475467', '#F2F4F7']
                     : a ? [astatOf(a.status).label, astatOf(a.status).fg, astatOf(a.status).bg]
-                      : s.heldBySuggestionId ? ['Held', '#93370D', '#FFFAEB'] : ['Open', '#067647', '#E5F5EC'];
+                      : s.status === 'BOOKED' ? ['Booked', '#475467', '#F2F4F7']
+                        : s.heldBySuggestionId ? ['Held', '#93370D', '#FFFAEB'] : ['Open', '#067647', '#E5F5EC'];
+                  const who = a ? a.patientName : s.status === 'CANCELLED' ? 'Cancelled slot' : s.status === 'BOOKED' ? 'Booked slot' : 'Open slot';
                   return (
                     <li key={s.id}>
                       <span className="mono muted" style={{ width: 70 }}>{fmtTime(s.startTime)}</span>
-                      <span className="ellipsis" style={{ flex: 1, minWidth: 0 }}>{a ? a.patientName : 'Open slot'}</span>
+                      <span className="ellipsis" style={{ flex: 1, minWidth: 0 }}>{who}</span>
                       <span className="tag" style={{ background: tag[2], color: tag[1] }}>{tag[0]}</span>
                     </li>
                   );

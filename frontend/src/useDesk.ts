@@ -33,11 +33,15 @@ export function useDesk() {
     const pending = inflight.current;
     if (pending) {
       if (!fresh) return pending;
+      // The in-flight request may have read the server before the mutation: invalidate its response
+      // (data and error) so the pre-mutation state is never shown, then wait for it and fetch again.
+      seq.current++;
       await pending.catch(() => undefined);
       if (inflight.current !== null && inflight.current !== pending) return refresh(true);
     }
     const mine = ++seq.current;
-    const p = (async () => {
+    let p: Promise<void> | null = null;
+    p = (async () => {
       try {
         const [suggestions, appointments, providers, schedule, activity, waitlist, notifications, strategy] = await Promise.all([
           api.listSuggestions(),
@@ -63,9 +67,9 @@ export function useDesk() {
         setLastOk(Date.now());
         setError(null);
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Connection lost');
+        if (mine === seq.current) setError(e instanceof Error ? e.message : 'Connection lost');
       } finally {
-        inflight.current = null;
+        if (inflight.current === p) inflight.current = null;
       }
     })();
     inflight.current = p;

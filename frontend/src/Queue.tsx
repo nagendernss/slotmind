@@ -6,12 +6,28 @@ import { Arrow, Check, Info, Refresh, Sparkle, Speaker, Warn } from './icons';
 
 const RANK: Record<string, number> = { URGENT: 0, FOLLOW_UP: 1, ROUTINE: 2 };
 
+// Sub-millisecond digits of the timestamp (LocalDateTime carries microseconds/nanoseconds).
+const subMs = (iso?: string | null) => {
+  const m = /T\d{2}:\d{2}(?::\d{2})?\.(\d+)/.exec(iso ?? '');
+  return m ? m[1].padEnd(9, '0').slice(3, 9) : '000000';
+};
+const idNum = (id: string) => { const m = /(\d+)$/.exec(id); return m ? +m[1] : -1; };
+
+/** True if a was created after b: timestamp (full precision), then the id sequence as a final tie-break. */
+function isNewer(a: SuggestionView, b: SuggestionView): boolean {
+  const d = timeMs(a.createdAt) - timeMs(b.createdAt);
+  if (d !== 0) return d > 0;
+  const fa = subMs(a.createdAt), fb = subMs(b.createdAt);
+  if (fa !== fb) return fa > fb;
+  return idNum(a.id) > idNum(b.id);
+}
+
 export function latestSuggestionByAppt(suggestions: SuggestionView[]): Record<string, SuggestionView> {
   const latest: Record<string, SuggestionView> = {};
   for (const s of suggestions) {
     if (s.status === 'SUPERSEDED') continue;
     const cur = latest[s.appointmentId];
-    if (!cur || timeMs(s.createdAt) >= timeMs(cur.createdAt)) latest[s.appointmentId] = s;
+    if (!cur || isNewer(s, cur)) latest[s.appointmentId] = s;
   }
   return latest;
 }
