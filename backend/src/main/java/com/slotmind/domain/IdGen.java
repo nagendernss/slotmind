@@ -3,7 +3,7 @@ package com.slotmind.domain;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Simple human-readable id generator ("SUG-0001"). In-memory DB, so a process-wide counter is enough. */
+/** Simple human-readable id generator ("SUG-001"; widens past 999). In-memory DB, so a process-wide counter is enough. */
 public final class IdGen {
     private static final ConcurrentHashMap<String, AtomicInteger> COUNTERS = new ConcurrentHashMap<>();
     private IdGen() {}

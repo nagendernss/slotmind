@@ -49,7 +49,12 @@ public class AiResponseParser {
         if (fence >= 0) {
             int bodyStart = s.indexOf('\n', fence);
             int end = bodyStart < 0 ? -1 : s.indexOf("```", bodyStart);
-            if (bodyStart >= 0 && end > bodyStart) s = s.substring(bodyStart + 1, end).trim();
+            // Only trust the fenced body if it actually holds JSON: a model may answer with bare JSON and then add a
+            // fenced note after it, which must not hide the real answer.
+            if (bodyStart >= 0 && end > bodyStart) {
+                String body = s.substring(bodyStart + 1, end).trim();
+                if (body.indexOf('{') >= 0) s = body;
+            }
         }
         int start = s.indexOf('{');
         if (start < 0) throw new LlmException("No JSON object in LLM response");

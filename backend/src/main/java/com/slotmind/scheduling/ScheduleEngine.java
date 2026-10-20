@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -25,6 +26,8 @@ import java.util.stream.Collectors;
 @Component
 public class ScheduleEngine {
     private static final Logger log = LoggerFactory.getLogger(ScheduleEngine.class);
+    /** Every internal id family (decision.md §15 #8): staff read reasoning aloud, so none may appear in it. */
+    static final Pattern INTERNAL_ID = Pattern.compile("\\b(SLT|PRV|APT|RM|CLN|SUG|WL)-\\d+",Pattern.CASE_INSENSITIVE);
 
     public record EngineResult(Slot slot, String alternateProviderId, double confidence, String reasoning,
                                String strategy, boolean fallbackUsed, boolean crossClinic) {}
@@ -140,7 +143,7 @@ public class ScheduleEngine {
         if (Double.isNaN(rec.confidence())) throw new IllegalStateException("confidence is not a number");
         String r = rec.reasoning();
         if (r == null || r.isBlank()) throw new IllegalStateException("reasoning is empty");
-        if (r.contains("SLT-") || r.contains("PRV-")) throw new IllegalStateException("reasoning contains internal ids");
+        if (INTERNAL_ID.matcher(r).find()) throw new IllegalStateException("reasoning contains internal ids");
         return slot;
     }
 
