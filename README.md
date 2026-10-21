@@ -19,12 +19,13 @@ export SLOTMIND_AI_API_KEY=sk-...          # PowerShell: $env:SLOTMIND_AI_API_KE
 ./mvnw spring-boot:run                      # Windows: mvnw.cmd spring-boot:run
 # no key / offline demo: runs automatically with the mock AI when no key is set,
 # or force it: ./mvnw spring-boot:run -Dspring-boot.run.arguments=--slotmind.ai.provider=mock
-# tests: ./mvnw test
+# tests: ./mvnw test   (414 tests; coverage report in target/site/jacoco/index.html)
 
 # 2. Frontend (http://localhost:5173)
 cd frontend
 npm install
 npm run dev
+npm test        # 218 tests (Vitest)
 ```
 
 Patient portal: `http://localhost:5173/#/portal/APT-001` · H2 console: `http://localhost:8080/api/h2-console`

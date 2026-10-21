@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -148,6 +149,25 @@ class FiltersTest {
             assertThat(filter.test(Fx.open("S", f.chen, null, 9, 0), f.fc(0, Set.of(), Map.of("PRV-002", 9), null))).isFalse();
             Provider zeroCap = new Provider("PRV-099", "Dr. Zero", Specialty.GENERAL, ProviderStatus.AVAILABLE, f.downtown, 0);
             assertThat(filter.test(Fx.open("S", zeroCap, null, 9, 0), f.fc())).isFalse();
+        }
+
+        @Test
+        void todaysFullLoadDoesNotBlockAnotherDay() {
+            Slot tomorrow = new Slot("S", f.chen, null, Fx.NOW.plusDays(1).withHour(9), 30, SlotStatus.OPEN);
+            assertThat(filter.test(tomorrow, f.fc(0, Set.of(), Map.of("PRV-002", 8), null)))
+                    .as("today's count must not apply to tomorrow").isTrue();
+        }
+
+        @Test
+        void capIsCheckedAgainstTheSlotsOwnDay() {
+            LocalDate today = Fx.NOW.toLocalDate(), tomorrow = today.plusDays(1);
+            var byDay = Map.of(today, Map.of("PRV-002", 1), tomorrow, Map.of("PRV-002", 8));
+            FilterContext fc = new FilterContext(f.appt, 0, Set.of(), Map.of("PRV-002", 1), null, Fx.NOW, byDay);
+            assertThat(filter.test(Fx.open("S1", f.chen, null, 9, 0), fc)).as("today: 1 of 8").isTrue();
+            Slot tomorrowSlot = new Slot("S2", f.chen, null, Fx.NOW.plusDays(1).withHour(9), 30, SlotStatus.OPEN);
+            assertThat(filter.test(tomorrowSlot, fc)).as("tomorrow: 8 of 8").isFalse();
+            Slot dayAfter = new Slot("S3", f.chen, null, Fx.NOW.plusDays(2).withHour(9), 30, SlotStatus.OPEN);
+            assertThat(filter.test(dayAfter, fc)).as("no bookings that day").isTrue();
         }
     }
 

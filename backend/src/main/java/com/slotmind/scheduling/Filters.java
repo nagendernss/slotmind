@@ -59,7 +59,7 @@ public final class Filters {
         public boolean test(Slot s, FilterContext c) {
             var p = s.getProvider();
             if (p.getId().equals(c.appointment().getProvider().getId())) return true; // moving within same provider: load unchanged
-            return c.providerLoad().getOrDefault(p.getId(), 0) < p.getMaxDailyAppointments();
+            return c.loadOn(p.getId(), s.getStartTime().toLocalDate()) < p.getMaxDailyAppointments(); // cap applies per day of the slot
         }
     }
 

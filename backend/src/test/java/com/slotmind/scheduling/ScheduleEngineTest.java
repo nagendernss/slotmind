@@ -453,7 +453,8 @@ class ScheduleEngineTest {
     void violatedConstraintReportsFirstFailingFilter() {
         assertThat(engine.violatedConstraint(f.appt, Fx.slot("S", f.chen, null, 11, 0, SlotStatus.BOOKED))).isEqualTo("OpenFutureSlot");
         assertThat(engine.violatedConstraint(f.appt, kim11)).isEqualTo("SpecialtyMatch");
-        when(load.bookedToday()).thenReturn(Map.of("PRV-002", 8));
+        when(load.bookedByDay(chen11.getStartTime().toLocalDate()))
+                .thenReturn(Map.of(chen11.getStartTime().toLocalDate(), Map.of("PRV-002", 8)));
         assertThat(engine.violatedConstraint(f.appt, chen11)).isEqualTo("ProviderDailyCap");
         f.chen.changeStatus(ProviderStatus.OFFLINE);
         assertThat(engine.violatedConstraint(f.appt, chen11)).isEqualTo("ProviderOnline");

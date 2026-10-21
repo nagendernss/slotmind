@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -116,15 +117,17 @@ public class ScheduleEngine {
     public String violatedConstraint(Appointment appt, Slot slot) {
         AppointmentTypeRule rule = typeRules.findById(appt.getType()).orElse(null);
         FilterContext fc = new FilterContext(appt, rule == null ? 0 : rule.getDurationMinutes(),
-                rule == null ? Set.of() : rule.getRequiredEquipment(), loadService.bookedToday(), null, LocalDateTime.now());
+                rule == null ? Set.of() : rule.getRequiredEquipment(), loadService.bookedToday(), null, LocalDateTime.now(),
+                loadService.bookedByDay(slot.getStartTime().toLocalDate()));
         return filters.stream().filter(f -> !f.test(slot, fc)).map(CandidateFilter::name).findFirst().orElse(null);
     }
 
     private List<Slot> candidates(Appointment appt, List<Slot> base, Set<String> held, String home,
                                   Map<String, Integer> load, LocalDateTime now) {
+        Map<LocalDate, Map<String, Integer>> loadByDay = loadService.bookedByDay(now.toLocalDate());
         AppointmentTypeRule rule = typeRules.findById(appt.getType()).orElse(null);
         FilterContext fc = new FilterContext(appt, rule == null ? 0 : rule.getDurationMinutes(),
-                rule == null ? Set.of() : rule.getRequiredEquipment(), load, home, now);
+                rule == null ? Set.of() : rule.getRequiredEquipment(), load, home, now, loadByDay);
         List<Slot> legal = base.stream().filter(s -> filters.stream().allMatch(f -> f.test(s, fc))).toList();
         // Prefer slots not already proposed to another patient; use them only if nothing else is legal.
         List<Slot> free = legal.stream().filter(s -> !held.contains(s.getId())).toList();

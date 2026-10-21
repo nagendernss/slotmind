@@ -30,4 +30,9 @@ public interface SlotRepository extends JpaRepository<Slot, String> {
     @Query("select s.provider.id, count(s) from Slot s where s.status = com.slotmind.domain.SlotStatus.BOOKED "
             + "and s.startTime >= :from and s.startTime < :to group by s.provider.id")
     List<Object[]> countBookedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Provider id and start time of every booked slot from the given moment on (daily-cap check per day). */
+    @Query("select s.provider.id, s.startTime from Slot s where s.status = com.slotmind.domain.SlotStatus.BOOKED "
+            + "and s.startTime >= :from")
+    List<Object[]> findBookedFrom(@Param("from") LocalDateTime from);
 }

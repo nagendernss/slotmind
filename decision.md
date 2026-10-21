@@ -269,11 +269,26 @@ relative to start-up (`now + N minutes`) exactly as in the addendum, plus extra 
 second clinic, type rules, two waitlist entries and one explicit preference, so every feature is demoable.
 Demo tip from the brief holds: `PATCH /providers/PRV-001/status OFFLINE` → two suggestions (APT-001, APT-002).
 
-## 14. Testing strategy (time-boxed)
+## 14. Testing strategy
 
-Integration tests on the paths that carry the points: (1) accept is atomic and a second accept of the same slot
-gets 409; (2) provider OFFLINE produces exactly one suggestion per affected appointment and is idempotent;
-(3) invalid AI output (unknown slot) falls back to rule-based.
+**Backend:** 414 tests (JUnit 5, AssertJ, Mockito, Spring Boot Test), all passing. One opt-in live-LLM check is
+skipped unless `-Dlive=true`. `./mvnw test` also writes a JaCoCo report to `target/site/jacoco/`.
+
+| Layer | How it is tested |
+|---|---|
+| Domain entities and state machines | Plain unit tests: every legal transition and every illegal one |
+| Filters, strategies, engine | Unit tests with real domain objects. The engine is tested with mocked repositories: every validation-failure path → rule-based fallback |
+| LLM gateway | Against a local JDK `HttpServer` stub: headers (bearer, `product`), non-2xx, timeout, empty or non-JSON body |
+| Services, background loop, waitlist, notifications | `@SpringBootTest`, one shared context, and per-test data with unique ids (no `@DirtiesContext`). Async waits are bounded polling |
+| REST + SSE | MockMvc for every endpoint and error shape; SSE over a real random port |
+| Repositories | `@DataJpaTest`: every custom query, fetch joins, both unique constraints |
+| Concurrency (AGT-3) | A real two-thread HTTP race, repeated: exactly one 200 and one 409, no double booking. A forced stale-read test covers the `@Version` path |
+
+Line coverage is 96–100% in every package with logic (domain, scheduling, ai, service, config, web, view).
+
+**Frontend:** 218 tests (Vitest, Testing Library, jsdom), all passing. Coverage: 100% statements and lines, 91.6% branches.
+The tests cover the API client, the SSE parser (chunks split at awkward boundaries), the polling/refresh race, every
+screen's states and the booking form.
 
 ## 15. Decisions made during implementation
 
@@ -289,6 +304,13 @@ gets 409; (2) provider OFFLINE produces exactly one suggestion per affected appo
 | 7 | Prompt forbids guessing doctors' gender | Live testing showed the model writing "she" for a doctor it knew only by name |
 | 8 | IDs: `RM-` rooms, `CLN-` clinics, `SUG-` suggestions, `WL-` waitlist; reasoning containing any internal id is rejected → fallback | IDs are system jargon that staff must not read to patients |
 | 9 | Known limitation: when a slot is booked, another patient's pending suggestion for that same slot is not auto-regenerated; accepting it returns 409 and the UI asks for a new suggestion | Rare (decision 2 avoids it whenever another legal slot exists). Auto-regeneration on `SlotBooked` is a small follow-up listener |
+| 10 | "Suggest another" excludes **every** slot already offered to the patient (pending, superseded, rejected). Once all have been offered, it cycles back, excluding only the rejected ones | Found in manual testing: without a rejection, it kept returning the same best slot |
+| 11 | The daily cap counts bookings **on the slot's own day**, not today's count | Found by tests: a provider who was full today was wrongly excluded from tomorrow's slots |
+| 12 | The engine's id check rejects reasoning containing any internal id (`SLT/PRV/APT/RM/CLN/SUG/WL-n`), not just slot and provider ids | Found by tests: appointment, room and clinic ids could reach the text staff read aloud |
+| 13 | Confirming a waitlist offer re-checks that the slot is still in the future (409 otherwise) | Found by tests: an offer whose time had passed could still be booked |
+| 14 | A blank `slotmind.scheduling.strategy` means AI | Found by tests: an empty value made every suggestion fall back to rule-based |
+| 15 | Concurrency note: under H2, the losing side of a same-slot race is usually stopped by the `slot_id` unique constraint, not by `@Version` | Both paths map to 409 `SLOT_UNAVAILABLE`. The tests cover both, so the guarantee doesn't depend on which one fires |
+| 16 | Open question (kept as is): when every legal slot at the home clinic is already held by another patient's suggestion, the engine offers a held slot there rather than widening to a free slot at another clinic | It keeps the patient at their clinic; the possible conflict is caught at accept time (409). Preferring a free slot at another clinic is a one-line change in `ScheduleEngine` if wanted |
 
 ## 16. Traceability — every task in the brief
 
