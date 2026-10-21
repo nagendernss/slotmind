@@ -14,7 +14,7 @@ Format per decision: **Context → Options → Decision → Tradeoffs**.
 |---|---|
 | 2 hours total, solo, all 3 sprints | Monolith, in-process events, H2, no message broker, no auth. Every sprint-2/3 feature is an *addition* (new filter, new listener, new entity), never a rewrite. |
 | Walkthrough: book → provider offline → suggestion appears → accept updates slot atomically | This path must work at every checkpoint. Built and verified first; extensions layered on top. |
-| LLM may be slow / down / wrong at demo time | Engine validates every AI answer and falls back to rule-based. A `mock` LLM provider makes the demo deterministic with no API key. |
+| LLM may be slow / down / wrong / not configured at demo time | Engine validates every AI answer and falls back to rule-based, labelled "Rule-based fallback · AI unavailable". Without an API key the AI is treated as unavailable (same fallback). A deterministic `mock` LLM exists only for automated tests (`slotmind.ai.provider=mock`). |
 | Staff read reasoning aloud to patients | Prompt forces second-person, plain language, no IDs/jargon. Rule-based output is labelled "template text" in the UI. |
 
 ## 1. Stack
@@ -25,7 +25,7 @@ Format per decision: **Context → Options → Decision → Tradeoffs**.
 | Build toolchain | Standard **JDK 21** (`javac`), Maven via the `mvnw` wrapper | Conventional setup any reviewer can reproduce on Windows/macOS/Linux; Mockito and all test tooling work without tweaks. *History:* the build machine first had only a JRE, so we briefly compiled with the Eclipse compiler (ECJ). We replaced that with a portable Temurin JDK 21 (no admin rights needed) to remove the workaround | Keeping ECJ (non-standard, broke Mockito's inline mocks on a JRE) |
 | DB | H2 in-memory (Postgres-compatible mode), schema via JPA | Zero setup for a 2-hour build; Postgres swap = datasource config only | Postgres in Docker (setup time) |
 | Frontend | React 18 + Vite + TypeScript, no UI library | Fastest to scaffold; prototype design ported as plain CSS | Angular 17 (more boilerplate) |
-| LLM | One `OpenAiCompatibleLlmGateway` → **provided LiteLLM proxy** (`https://litellm-qc.zycus.net/v1`, model `qwen-cursor`, extra header `product: PC1`); Groq/Gemini/Ollama work via base-url; plus `MockLlmGateway` | LiteLLM, Groq, Gemini and Ollama all speak OpenAI-compatible `/chat/completions` → one client, any provider, chosen by config. API key read from env `SLOTMIND_AI_API_KEY` or git-ignored `application-local.properties` — **never committed** (repo is public) | Provider-specific clients (3× code); key in `application.yml` (leaks in public repo) |
+| LLM | One `OpenAiCompatibleLlmGateway` → **provided LiteLLM proxy** (`https://litellm-qc.zycus.net/v1`, model `qwen-cursor`, extra header `product: PC1`); Groq/Gemini/Ollama work via base-url; `MockLlmGateway` for automated tests only; `UnavailableLlmGateway` when no key is set | LiteLLM, Groq, Gemini and Ollama all speak OpenAI-compatible `/chat/completions` → one client, any provider, chosen by config. API key read from env `SLOTMIND_AI_API_KEY` or git-ignored `application-local.properties` — **never committed** (repo is public) | Provider-specific clients (3× code); key in `application.yml` (leaks in public repo) |
 | Async | Spring `@Async` + `@TransactionalEventListener(AFTER_COMMIT)` | Decoupled, no infra | Kafka/RabbitMQ (infra cost; noted as future) |
 | API base | `server.servlet.context-path=/api` | Controllers keep the brief's exact paths (`/appointments`, `/providers/{id}/status`…); Vite proxies `/api` | — |
 
@@ -203,7 +203,9 @@ StrategyConfig  { "strategy":"AI","available":["AI","RULE_BASED","ROOM_CONSTRAIN
 - **Gateway.** `LlmGateway.callLLM(systemPrompt, userPrompt) → String` (matches Addendum B). Implementations:
   `OpenAiCompatibleLlmGateway` (`slotmind.ai.provider=litellm|groq|gemini|ollama`, base-url/model/key/extra-headers
   from config, 15s timeout; default = provided LiteLLM proxy, model `qwen-cursor`, header `product: PC1`)
-  and `MockLlmGateway` (`provider=mock`, deterministic JSON, used when no key → demo never depends on wifi).
+  and `MockLlmGateway` (`provider=mock`, deterministic JSON; **tests only**, never chosen automatically).
+  With a real provider but no API key, `UnavailableLlmGateway` fails every call → the brief's rule-based fallback,
+  labelled "AI unavailable" in the UI. Canned text is never presented as AI output.
 - **Two prompts.** `PromptFactory` picks by trigger:
   - `PROVIDER_OFFLINE`: "the booked doctor is unavailable today; an alternate provider with the same specialty is
     expected; weigh continuity (follow-ups) and urgency."
@@ -311,6 +313,7 @@ screen's states and the booking form.
 | 14 | A blank `slotmind.scheduling.strategy` means AI | Found by tests: an empty value made every suggestion fall back to rule-based |
 | 15 | Concurrency note: under H2, the losing side of a same-slot race is usually stopped by the `slot_id` unique constraint, not by `@Version` | Both paths map to 409 `SLOT_UNAVAILABLE`. The tests cover both, so the guarantee doesn't depend on which one fires |
 | 16 | Open question (kept as is): when every legal slot at the home clinic is already held by another patient's suggestion, the engine offers a held slot there rather than widening to a free slot at another clinic | It keeps the patient at their clinic; the possible conflict is caught at accept time (409). Preferring a free slot at another clinic is a one-line change in `ScheduleEngine` if wanted |
+| 17 | No API key → AI **unavailable** (rule-based fallback, labelled), not the mock. The mock is used only when explicitly configured (tests) | Earlier, a missing key silently switched to the mock, whose canned text was labelled "AI advisor" — misleading to anyone running the repo without a key. The brief defines the right behaviour: "fallback to rule-based on LLM failure" |
 
 ## 16. Traceability — every task in the brief
 

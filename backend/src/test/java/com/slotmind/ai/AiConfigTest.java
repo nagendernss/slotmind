@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Bean selection + property binding, with a minimal context (no web/JPA). */
 class AiConfigTest {
@@ -15,12 +16,12 @@ class AiConfigTest {
             .withBean(ObjectMapper.class);
 
     @Test
-    void noPropertiesAtAllMeansMock() {
+    void noPropertiesAtAllMeansAiUnavailableNotMock() {
         runner.run(ctx -> {
             assertThat(ctx).hasSingleBean(LlmGateway.class);
-            assertThat(ctx.getBean(LlmGateway.class)).isInstanceOf(MockLlmGateway.class);
+            assertThat(ctx.getBean(LlmGateway.class)).isInstanceOf(UnavailableLlmGateway.class);
             AiProperties p = ctx.getBean(AiProperties.class);
-            assertThat(p.provider()).isEqualTo("mock");
+            assertThat(p.provider()).isEqualTo("litellm");
             assertThat(p.baseUrl()).isEqualTo("https://litellm-qc.zycus.net/v1");
             assertThat(p.model()).isEqualTo("qwen-cursor");
             assertThat(p.headers()).isEmpty();
@@ -35,13 +36,21 @@ class AiConfigTest {
     }
 
     @Test
-    void realProviderWithBlankKeyFallsBackToMock() {
+    void realProviderWithBlankKeyIsUnavailableNotMock() {
         runner.withPropertyValues("slotmind.ai.provider=litellm", "slotmind.ai.api-key=")
-                .run(ctx -> assertThat(ctx.getBean(LlmGateway.class)).isInstanceOf(MockLlmGateway.class));
+                .run(ctx -> assertThat(ctx.getBean(LlmGateway.class)).isInstanceOf(UnavailableLlmGateway.class));
         runner.withPropertyValues("slotmind.ai.provider=groq", "slotmind.ai.api-key=   ")
-                .run(ctx -> assertThat(ctx.getBean(LlmGateway.class)).isInstanceOf(MockLlmGateway.class));
+                .run(ctx -> assertThat(ctx.getBean(LlmGateway.class)).isInstanceOf(UnavailableLlmGateway.class));
         runner.withPropertyValues("slotmind.ai.provider=litellm")
-                .run(ctx -> assertThat(ctx.getBean(LlmGateway.class)).isInstanceOf(MockLlmGateway.class));
+                .run(ctx -> assertThat(ctx.getBean(LlmGateway.class)).isInstanceOf(UnavailableLlmGateway.class));
+    }
+
+    @Test
+    void unavailableGatewayAlwaysThrowsSoTheEngineFallsBack() {
+        UnavailableLlmGateway g = new UnavailableLlmGateway("no API key configured");
+        assertThatThrownBy(() -> g.callLLM("s", "u")).isInstanceOf(LlmException.class)
+                .hasMessage("AI unavailable: no API key configured");
+        assertThat(g.reason()).isEqualTo("no API key configured");
     }
 
     @Test
@@ -64,15 +73,15 @@ class AiConfigTest {
         AiConfig cfg = new AiConfig();
         ObjectMapper m = new ObjectMapper();
         assertThat(cfg.llmGateway(new AiProperties("mock", null, null, "k", null, null), m)).isInstanceOf(MockLlmGateway.class);
-        assertThat(cfg.llmGateway(new AiProperties("litellm", null, null, null, null, null), m)).isInstanceOf(MockLlmGateway.class);
+        assertThat(cfg.llmGateway(new AiProperties("litellm", null, null, null, null, null), m)).isInstanceOf(UnavailableLlmGateway.class);
         assertThat(cfg.llmGateway(new AiProperties("litellm", null, null, "k", null, null), m)).isInstanceOf(OpenAiCompatibleLlmGateway.class);
     }
 
     @Test
     void propertiesDefaultsAndPredicates() {
         AiProperties blank = new AiProperties(" ", "", "", null, null, 0);
-        assertThat(blank.provider()).isEqualTo("mock");
-        assertThat(blank.isMock()).isTrue();
+        assertThat(blank.provider()).isEqualTo("litellm");
+        assertThat(blank.isMock()).isFalse();
         assertThat(blank.baseUrl()).isEqualTo("https://litellm-qc.zycus.net/v1");
         assertThat(blank.model()).isEqualTo("qwen-cursor");
         assertThat(blank.headers()).isEmpty();

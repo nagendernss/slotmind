@@ -7,7 +7,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Creates exactly ONE {@link LlmGateway}: real proxy client, or the deterministic mock (provider=mock or no key). */
+/**
+ * Creates exactly ONE {@link LlmGateway}: the real OpenAI-compatible client; the deterministic mock only when
+ * explicitly configured ({@code slotmind.ai.provider=mock}, used by tests); otherwise, with no API key, an
+ * "unavailable" gateway so suggestions honestly fall back to rule-based.
+ */
 @Configuration
 @EnableConfigurationProperties(AiProperties.class)
 public class AiConfig {
@@ -20,9 +24,9 @@ public class AiConfig {
             return new MockLlmGateway(mapper);
         }
         if (!props.hasKey()) {
-            log.warn("SlotMind AI: provider '{}' configured but slotmind.ai.api-key is blank -> falling back to MockLlmGateway",
-                    props.provider());
-            return new MockLlmGateway(mapper);
+            log.warn("SlotMind AI: provider '{}' configured but no API key (SLOTMIND_AI_API_KEY / slotmind.ai.api-key) "
+                    + "-> AI unavailable, suggestions use the rule-based fallback", props.provider());
+            return new UnavailableLlmGateway("no API key configured");
         }
         log.info("SlotMind AI: using OpenAI-compatible gateway provider={} model={} baseUrl={}",
                 props.provider(), props.model(), props.baseUrl());

@@ -17,8 +17,8 @@ cd backend
 # AI key: env var, or a git-ignored src/main/resources/application-local.properties containing slotmind.ai.api-key=...
 export SLOTMIND_AI_API_KEY=sk-...          # PowerShell: $env:SLOTMIND_AI_API_KEY="sk-..."
 ./mvnw spring-boot:run                      # Windows: mvnw.cmd spring-boot:run
-# no key / offline demo: runs automatically with the mock AI when no key is set,
-# or force it: ./mvnw spring-boot:run -Dspring-boot.run.arguments=--slotmind.ai.provider=mock
+# no key: the app still runs; AI is shown as unavailable and suggestions use the
+# rule-based fallback ("Rule-based fallback · AI unavailable" on each card)
 # tests: ./mvnw test   (414 tests; coverage report in target/site/jacoco/index.html)
 
 # 2. Frontend (http://localhost:5173)

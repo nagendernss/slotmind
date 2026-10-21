@@ -101,8 +101,9 @@ Other extension points used in Sprint 2 and 3:
 - Queue pressure: provider load added to the context and the prompt.
 - Patient portal: reuses the same accept transaction with `actor=PATIENT`.
 
-**AI design.** One OpenAI-compatible gateway serves the provided LiteLLM proxy, Groq, Gemini and Ollama; a mock gateway
-is used for offline demos. There are **two prompts**:
+**AI design.** One OpenAI-compatible gateway serves the provided LiteLLM proxy, Groq, Gemini and Ollama. Without an API
+key the AI is treated as unavailable, so suggestions use the rule-based fallback and are labelled that way. A
+deterministic mock gateway exists only for automated tests. There are **two prompts**:
 - **Provider offline:** expect an alternate provider with the same specialty; weigh continuity of care and urgency.
 - **Slot cancelled:** prefer the same provider's next opening.
 

@@ -9,7 +9,7 @@ import java.util.Map;
 public record AiProperties(String provider, String baseUrl, String model, String apiKey,
                            Map<String, String> headers, Integer timeoutSeconds) {
     public AiProperties {
-        if (provider == null || provider.isBlank()) provider = "mock";
+        if (provider == null || provider.isBlank()) provider = "litellm"; // mock only when explicitly chosen
         if (baseUrl == null || baseUrl.isBlank()) baseUrl = "https://litellm-qc.zycus.net/v1";
         if (model == null || model.isBlank()) model = "qwen-cursor";
         if (headers == null) headers = Map.of();
